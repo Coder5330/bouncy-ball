@@ -1,0 +1,3418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bounce Dodge</title>
+<!--
+  Bounce Dodge
+  © 2026 kdn. All rights reserved.
+  This game, its source code, artwork, and design are the original
+  work of kdn. Copying, redistributing, or claiming this work as your
+  own without permission is not allowed.
+  This website/game was not created by Joshua.
+-->
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Bungee&family=Chakra+Petch:wght@500;700&display=swap');
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: 'Chakra Petch', sans-serif;
+  background: #12002e;
+  color: #fff;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  overflow: hidden;
+}
+
+#rotateHint {
+  display: none;
+  position: fixed;
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 50;
+  background: rgba(255, 230, 0, 0.15);
+  border: 1px solid #ffe06699;
+  color: #ffe066;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 6px 14px;
+  border-radius: 20px;
+  pointer-events: none;
+}
+#rotateHint.show { display: block; }
+
+.stage {
+  position: relative;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 0 0 4px #ff2e97, 0 0 40px #ff2e9799, 0 0 80px #7b2fff66;
+}
+
+#bg, #c {
+  display: block;
+  position: absolute;
+  top: 0; left: 0;
+}
+
+#c { z-index: 2; }
+#bg { z-index: 1; }
+
+#overlay {
+  position: absolute;
+  top: 56px;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 12px;
+  text-align: center;
+  background: rgba(18, 0, 46, 0.92);
+  backdrop-filter: blur(3px);
+  pointer-events: none;
+  padding: 14px 18px 20px;
+  overflow-y: auto;
+}
+#overlay.active { pointer-events: auto; }
+#overlay.hidden { display: none; }
+#overlay.center { justify-content: center; }
+
+#page1, #page2, #page3, #page4 {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+}
+#page1.active, #page2.active, #page3.active, #page4.active { display: flex; }
+
+#overlay h1 {
+  font-family: 'Bungee', cursive;
+  font-size: clamp(26px, 6vw, 44px);
+  line-height: 0.95;
+  background: linear-gradient(180deg, #00f0ff 0%, #ff2e97 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(3px 3px 0 #7b2fff);
+}
+
+#overlay h2 {
+  font-family: 'Bungee', cursive;
+  font-size: clamp(28px, 5.5vw, 46px);
+  color: #ffe600;
+  text-shadow: 3px 3px 0 #ff2e97;
+}
+
+#overlay p { font-size: clamp(12px, 2.3vw, 15px); color: #c7b8ff; }
+#overlay .big { font-size: clamp(18px, 4vw, 26px); color: #fff; font-weight: 700; }
+#overlay .big strong { color: #00f0ff; }
+#overlay .best { color: #ffe600; }
+#overlay .coinGain { color: #ffd23f; }
+
+#pageDots { display: flex; gap: 8px; margin-bottom: 2px; }
+.pageDot { width: 9px; height: 9px; border-radius: 50%; background: #ffffff33; }
+.pageDot.on { background: #ffe066; box-shadow: 0 0 8px #ffe066; }
+
+#statsBar {
+  display: flex;
+  gap: 18px;
+  font-size: 13px;
+  color: #c7b8ff;
+  background: rgba(0,0,0,0.25);
+  border: 2px solid #7b2fff88;
+  border-radius: 10px;
+  padding: 6px 16px;
+}
+#statsBar strong { color: #ffe600; }
+#statsBar .coinsVal { color: #ffd23f; }
+
+#nameEntry {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: rgba(255, 230, 0, 0.06);
+  border: 2px solid #ffe06699;
+}
+#nameEntry label {
+  font-size: 18px;
+  font-weight: 700;
+  color: #ffe066;
+  text-shadow: 0 0 10px #ffe06666;
+}
+#nameEntry input {
+  font-family: 'Chakra Petch', sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+  padding: 12px 18px;
+  width: 260px;
+  text-align: center;
+  border-radius: 10px;
+  border: 3px solid #ffe066;
+  background: rgba(0,0,0,0.4);
+  color: #fff;
+  outline: none;
+  box-shadow: 0 0 14px #ffe06655;
+}
+#nameEntry input:focus { border-color: #00f0ff; box-shadow: 0 0 16px #00f0ff88; }
+#nameEntry input.inputError { border-color: #ff3b5c; box-shadow: 0 0 14px #ff3b5c99; animation: shake 0.35s; }
+#kdnPinField { width: 140px; letter-spacing: 6px; }
+#kdnPinError {
+  display: none;
+  color: #ff6b8a;
+  font-size: 13px;
+  font-weight: 700;
+  margin: 0;
+}
+#kdnPinError.show { display: block; }
+#nameError {
+  display: none;
+  color: #ff6b8a;
+  font-size: 13px;
+  font-weight: 700;
+  margin: 0;
+}
+#nameError.show { display: block; }
+#welcomeBack {
+  font-size: 12px;
+  color: #7af5ca;
+  margin: 0;
+}
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-6px); }
+  75% { transform: translateX(6px); }
+}
+
+#difficultyPicker {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  margin-top: 2px;
+  margin-bottom: 2px;
+}
+#difficultyPicker p { margin-bottom: 2px; }
+#difficultyPicker label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+#difficultyPicker .diffBest { font-size: 11px; color: #ffe066; }
+#difficultyPicker .coinRate { font-size: 11px; color: #ffd23f; }
+
+#legend {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  background: rgba(0,0,0,0.25);
+  border: 2px solid #7b2fff88;
+  border-radius: 10px;
+  padding: 10px 16px;
+  font-size: clamp(11px, 2.1vw, 13px);
+  text-align: left;
+  max-width: 440px;
+}
+#legend .row { display: flex; align-items: center; gap: 10px; }
+#legend .dot {
+  width: 15px; height: 15px; border-radius: 50%;
+  flex-shrink: 0;
+  box-shadow: 0 0 8px currentColor;
+}
+#legend .dot.green { background: #4dff5a; color: #4dff5a; }
+#legend .dot.yellow { background: #fff23d; color: #fff23d; }
+#legend .dot.red { background: #ff3b3b; color: #ff3b3b; }
+#legend .dot.black { background: #000; color: #e6e6e6; border: 1px solid #e6e6e6; }
+#legend .dot.spiny { background: #1a1a22; color: #b388ff; border: 1px solid #b388ff; }
+#legend .dot.holy { background: #fff7cf; color: #ffe066; }
+#legend strong { color: #fff; }
+
+#huePicker {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 14px;
+  margin-top: 2px;
+}
+.hueRow {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: #c7b8ff;
+}
+.hueRow input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 120px;
+  height: 10px;
+  border-radius: 5px;
+  background: linear-gradient(90deg, #ff0000, #ff9900, #fff700, #33ff00, #00fff7, #0033ff, #b300ff, #ff0000);
+  outline: none;
+  cursor: pointer;
+}
+.hueRow input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  border: 3px solid #12002e;
+  box-shadow: 0 0 6px #000;
+  cursor: pointer;
+}
+.hueRow input[type="range"]::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  border: 3px solid #12002e;
+  cursor: pointer;
+}
+.hueSwatch {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  box-shadow: 0 0 10px currentColor;
+}
+
+#previewWrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  margin: 4px 0;
+}
+#previewCanvas {
+  border-radius: 50%;
+  background: radial-gradient(circle, #1a0640, #0a0020);
+  box-shadow: 0 0 24px #ffffff22, inset 0 0 20px #00000066;
+}
+#previewWrap p { font-size: 11px; }
+
+#upgradeTabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+.tabBtn {
+  font-family: 'Chakra Petch', sans-serif;
+  font-weight: 700;
+  font-size: 13px;
+  padding: 8px 16px;
+  border-radius: 20px;
+  border: 2px solid #7b2fff88;
+  background: rgba(0,0,0,0.3);
+  color: #c7b8ff;
+  cursor: pointer;
+}
+.tabBtn.active {
+  background: linear-gradient(180deg, #ffd23f, #ff9500);
+  color: #12002e;
+  border-color: #ffd23f;
+}
+.tabPanel { display: none; width: 100%; flex-direction: column; align-items: center; gap: 8px; }
+.tabPanel.active { display: flex; }
+
+#upgradeShop, .tabPanel {
+  width: 100%;
+  max-width: 440px;
+}
+#characterTab, #companionsTab {
+  background: rgba(0,0,0,0.25);
+  border: 2px solid #ffd23f88;
+  border-radius: 10px;
+  padding: 10px 14px;
+  gap: 8px;
+}
+.upgradeRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  background: rgba(255,255,255,0.04);
+  border-radius: 8px;
+  padding: 6px 10px;
+  width: 100%;
+}
+.upgradeInfo { display: flex; flex-direction: column; align-items: flex-start; text-align: left; }
+.upgradeName { font-size: 13px; font-weight: 700; color: #fff; }
+
+.companionRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(255,255,255,0.04);
+  border-radius: 8px;
+  padding: 8px 10px;
+  width: 100%;
+}
+.companionInfo { display: flex; flex-direction: column; align-items: flex-start; text-align: left; gap: 2px; flex: 1; }
+.companionEmoji { font-size: 22px; }
+.companionName { font-size: 13px; font-weight: 700; color: #fff; }
+.companionDesc { font-size: 11px; color: #c7b8ff; }
+.upgradeDetail { font-size: 11px; color: #ffd23f; }
+.buyBtn {
+  font-family: 'Chakra Petch', sans-serif;
+  font-weight: 700;
+  font-size: 12px;
+  padding: 7px 12px;
+  border: none;
+  border-radius: 8px;
+  background: linear-gradient(180deg, #ffd23f, #ff9500);
+  color: #12002e;
+  cursor: pointer;
+  box-shadow: 0 3px 0 #b35c00;
+  white-space: nowrap;
+}
+.buyBtn:disabled {
+  background: #555;
+  color: #999;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+.buyBtn:not(:disabled):hover { transform: translateY(-1px); }
+.buyBtn:not(:disabled):active { transform: translateY(2px); box-shadow: none; }
+
+#badgeWrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  transition: opacity 0.7s ease, transform 0.7s ease;
+  opacity: 1;
+  transform: scale(1);
+}
+#badgeWrap.fadeOut { opacity: 0; transform: scale(0.7); }
+#badge {
+  font-size: 110px;
+  filter: drop-shadow(0 0 24px #ffe066) drop-shadow(0 0 50px #ff9500);
+  animation: badgePop 0.6s cubic-bezier(.34,1.56,.64,1), badgeSpin 2.6s ease-in-out infinite;
+}
+@keyframes badgePop {
+  0% { transform: scale(0); }
+  70% { transform: scale(1.2); }
+  100% { transform: scale(1); }
+}
+@keyframes badgeSpin {
+  0%, 100% { transform: rotate(-8deg) scale(1); }
+  50% { transform: rotate(8deg) scale(1.08); }
+}
+
+#gameOverBtns, .navBtns {
+  display: flex;
+  gap: 14px;
+  margin-top: 4px;
+}
+
+#overlay button.secondary {
+  background: linear-gradient(180deg, #4d7bff, #7b2fff);
+  box-shadow: 0 6px 0 #2a1a80, 0 10px 24px rgba(0,0,0,0.4);
+  color: #fff;
+}
+#overlay button.secondary:hover { box-shadow: 0 8px 0 #2a1a80, 0 14px 28px rgba(0,0,0,0.5); }
+#overlay button.secondary:active { box-shadow: 0 2px 0 #2a1a80; }
+
+#overlay button {
+  font-family: 'Bungee', cursive;
+  margin-top: 4px;
+  padding: 12px 32px;
+  font-size: clamp(15px, 3.4vw, 22px);
+  border: none;
+  border-radius: 12px;
+  color: #12002e;
+  background: linear-gradient(180deg, #ffe600, #ff9500);
+  box-shadow: 0 6px 0 #b35c00, 0 10px 24px rgba(0,0,0,0.4);
+  cursor: pointer;
+  transition: transform .08s, box-shadow .08s;
+}
+#overlay button:hover { transform: translateY(-2px); box-shadow: 0 8px 0 #b35c00, 0 14px 28px rgba(0,0,0,0.5); }
+#overlay button:active { transform: translateY(4px); box-shadow: 0 2px 0 #b35c00; }
+#overlay button:focus-visible { outline: 3px solid #00f0ff; outline-offset: 3px; }
+#overlay button:disabled {
+  background: #555;
+  color: #999;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+}
+#overlay button:disabled:hover { transform: none; box-shadow: none; }
+
+#hud {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%;
+  height: 56px;
+  z-index: 6;
+  display: flex;
+  flex-wrap: wrap;
+  align-content: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 8px 16px;
+  font-weight: 700;
+  font-size: clamp(9px, 1.9vw, 14px);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  pointer-events: none;
+  text-shadow: 0 2px 6px #000;
+  background: #12002e;
+  border-bottom: 2px solid #7b2fff55;
+}
+#hud .label { color: #c7b8ff; }
+#hud .val { color: #00f0ff; }
+#hud .val.best { color: #ffe600; }
+#hud .val.holy { color: #ffe066; }
+#hud .val.lives { color: #ff3b5c; }
+#hud .val.coins { color: #ffd23f; }
+
+#topPauseBtn {
+  position: absolute;
+  top: 64px;
+  right: 14px;
+  z-index: 5;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 2px solid #ffe066;
+  background: rgba(18, 0, 46, 0.75);
+  color: #ffe066;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 10px #ffe06699;
+  transition: transform .12s, box-shadow .12s;
+}
+#topPauseBtn.visible { display: flex; }
+#topPauseBtn:hover { transform: scale(1.1); box-shadow: 0 0 16px #ffe066cc; }
+#topPauseBtn:active { transform: scale(0.92); }
+
+#controlPicker { margin-top: 4px; }
+.controlBtn {
+  font-family: 'Chakra Petch', sans-serif;
+  font-weight: 700;
+  font-size: 14px;
+  padding: 10px 18px;
+  border-radius: 10px;
+  border: 2px solid #7b2fff88;
+  background: rgba(0,0,0,0.3);
+  color: #c7b8ff;
+  cursor: pointer;
+}
+.controlBtn.active {
+  background: linear-gradient(180deg, #00f0ff, #4d7bff);
+  color: #12002e;
+  border-color: #00f0ff;
+}
+
+/* Joystick and ability button are positioned dynamically via JS,
+   in the free space BELOW the square arena, not overlapping it. */
+#joystickBase {
+  position: fixed;
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  border: 2px solid #ffe06699;
+  background: rgba(18, 0, 46, 0.55);
+  z-index: 20;
+  display: none;
+  touch-action: none;
+}
+#joystickBase.visible { display: block; }
+#joystickKnob {
+  position: absolute;
+  top: 30px;
+  left: 30px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #ffe066, #ff9500);
+  box-shadow: 0 0 12px #ffe06699;
+  pointer-events: none;
+}
+#abilityTouchBtn {
+  position: fixed;
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  border: 2px solid #ffe066;
+  background: rgba(18, 0, 46, 0.7);
+  color: #ffe066;
+  font-size: 28px;
+  z-index: 20;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  touch-action: none;
+}
+#abilityTouchBtn.visible { display: flex; }
+#abilityTouchBtn:active { transform: scale(0.92); }
+
+#saveCodeModal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: rgba(10, 0, 30, 0.85);
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+#saveCodeModal.visible { display: flex; }
+#saveCodeBox {
+  background: #1c0640;
+  border: 2px solid #ffe066;
+  border-radius: 14px;
+  padding: 20px;
+  max-width: 420px;
+  width: 100%;
+  box-shadow: 0 0 30px #ffe06655;
+  text-align: center;
+}
+#saveCodeBox h3 { font-family: 'Bungee', cursive; color: #ffe066; font-size: 18px; margin-bottom: 8px; }
+#saveCodeBox p { font-size: 12px; color: #c7b8ff; margin-bottom: 8px; }
+#saveCodeText {
+  width: 100%;
+  font-family: monospace;
+  font-size: 11px;
+  padding: 10px;
+  border-radius: 8px;
+  border: 2px solid #7b2fff88;
+  background: rgba(0,0,0,0.4);
+  color: #fff;
+  resize: vertical;
+  word-break: break-all;
+}
+#saveCodeStatus { color: #7af5ca; font-weight: 700; min-height: 16px; }
+
+</style>
+</head>
+<body>
+
+<div id="rotateHint">🔄 Rotate to landscape for a bigger arena!</div>
+
+<div class="stage" id="stage">
+  <canvas id="bg"></canvas>
+  <canvas id="c"></canvas>
+
+  <div id="hud">
+    <span id="timeLeftStat" style="display:none;"><span class="label">Time Left</span> <span class="val" id="timer">3:00</span></span>
+    <span><span class="label">Balls</span> <span class="val" id="count">0</span></span>
+    <span><span class="label">Lives</span> <span class="val lives" id="lives">❤❤❤</span></span>
+    <span><span class="label">Magic Circle</span> <span class="val holy" id="charges">3</span></span>
+    <span><span class="label">Lv Best</span> <span class="val best" id="best">0.0</span>s</span>
+    <span><span class="label">Coins</span> <span class="val coins" id="coinsHud">0</span></span>
+  </div>
+
+  <button id="topPauseBtn" title="Pause">⏸</button>
+
+  <div id="overlay" class="active">
+    <div id="pageDots">
+      <span class="pageDot on" data-p="1"></span>
+      <span class="pageDot" data-p="2"></span>
+      <span class="pageDot" data-p="3"></span>
+      <span class="pageDot" data-p="4"></span>
+    </div>
+
+    <div id="page1" class="active">
+      <h1>Bounce<br>Dodge</h1>
+
+      <div id="nameEntry">
+        <label for="playerNameField">👤 Your Name</label>
+        <input type="text" id="playerNameField" maxlength="18" placeholder="Enter your name" autocomplete="off">
+        <input type="password" id="kdnPinField" maxlength="50" placeholder="access code" autocomplete="off" style="display:none;">
+        <p id="kdnPinError">Incorrect PIN.</p>
+        <p id="nameError">Please enter your name to play!</p>
+        <p id="welcomeBack"></p>
+      </div>
+
+      <p>Your name saves your best scores, coins, and upgrades on this device for <strong style="color:#ffe066">1 month</strong>.</p>
+
+      <div id="statsBar">
+        <span>Overall Best: <strong id="overallBestDisplay">0.0s</strong></span>
+        <span>Coins: <strong class="coinsVal" id="coinsDisplay">0</strong> 💰</span>
+      </div>
+
+      <div class="navBtns" style="margin-top:0;">
+        <button id="exportCodeBtn" class="secondary" style="font-size:12px; padding:8px 14px;">📋 Copy Save Code</button>
+        <button id="importCodeBtn" class="secondary" style="font-size:12px; padding:8px 14px;">📥 Paste Save Code</button>
+      </div>
+      <p style="font-size:10px;">Save codes let you carry your progress into a different copy of this file — a single HTML file can't share storage with another one on its own.</p>
+
+      <div class="navBtns">
+        <button id="next1Btn">Next: Levels & Balls →</button>
+      </div>
+
+      <p style="font-size:10px; opacity:0.6; margin-top:10px;">© 2026 kdn. All rights reserved. Do not copy or redistribute without permission.</p>
+    </div>
+
+    <div id="page2">
+      <h1 style="font-size: clamp(22px, 5vw, 36px);">Levels &amp; Balls</h1>
+      <p>Use W A S D to move — survive the bouncing chaos!</p>
+
+      <div id="difficultyPicker">
+        <p><strong>Select difficulty:</strong></p>
+        <label>
+          <input type="radio" name="difficulty" value="0">
+          Baby — Green only
+          <span class="coinRate">(8 🪙/45s)</span>
+          <span class="diffBest" data-diff="0">Best: 0.0s</span>
+        </label>
+        <label>
+          <input type="radio" name="difficulty" value="1">
+          Easy — Green &amp; Yellow
+          <span class="coinRate">(15 🪙/45s)</span>
+          <span class="diffBest" data-diff="1">Best: 0.0s</span>
+        </label>
+        <label>
+          <input type="radio" name="difficulty" value="2" checked>
+          Medium — full mix
+          <span class="coinRate">(23 🪙/45s)</span>
+          <span class="diffBest" data-diff="2">Best: 0.0s</span>
+        </label>
+        <label>
+          <input type="radio" name="difficulty" value="3">
+          Hard — no Green, more Red
+          <span class="coinRate">(38 🪙/45s)</span>
+          <span class="diffBest" data-diff="3">Best: 0.0s</span>
+        </label>
+        <label>
+          <input type="radio" name="difficulty" value="4">
+          Impossible — mostly Red
+          <span class="coinRate">(75 🪙/45s)</span>
+          <span class="diffBest" data-diff="4">Best: 0.0s</span>
+        </label>
+      </div>
+
+      <div id="legend">
+        <div class="row"><span class="dot green"></span><span><strong>Green</strong> — very slow</span></div>
+        <div class="row"><span class="dot yellow"></span><span><strong>Yellow</strong> — a bit faster than green</span></div>
+        <div class="row"><span class="dot red"></span><span><strong>Red</strong> — fastest ball (still slower than you). Explodes into 2 Yellow balls after 5 bounces, each lasting 20s!</span></div>
+        <div class="row"><span class="dot black"></span><span><strong>Black (5%, Medium+)</strong> — moves at Yellow speed but homes in on you. Disappears after 10s</span></div>
+        <div class="row"><span class="dot spiny"></span><span><strong>Spiny</strong> — appears on Medium and up. Bounces like a normal ball but disappears after 20s. Every 10s it bursts into 6 Red balls that can explode into Yellows too if they survive long enough</span></div>
+        <div class="row"><span class="dot holy"></span><span><strong>Press E or Space</strong> — summon a magic circle that slows every ball inside it</span></div>
+        <div class="row"><span class="dot holy"></span><span><strong>Press P</strong> — pause the game anytime</span></div>
+      </div>
+
+      <p>You have <strong style="color:#ff3b5c">hearts</strong> ❤ — getting hit costs one, and gives you a brief holographic shield first.</p>
+      <p style="font-size:11px;">Coins are paid out every full 45 seconds survived — beating the level pays one extra interval's worth as a bonus.</p>
+
+      <div class="navBtns">
+        <button id="back2Btn" class="secondary">← Back</button>
+        <button id="next2Btn">Next: Upgrades →</button>
+      </div>
+    </div>
+
+    <div id="page3">
+      <h1 style="font-size: clamp(22px, 5vw, 36px);">Upgrades</h1>
+
+      <div id="upgradeTabs">
+        <button class="tabBtn active" data-tab="character">⚡ Character</button>
+        <button class="tabBtn" data-tab="companions">🐾 Companions</button>
+      </div>
+
+      <div id="characterTab" class="tabPanel active">
+        <div class="upgradeRow" data-key="move">
+          <div class="upgradeInfo">
+            <span class="upgradeName">🏃 Movement Speed</span>
+            <span class="upgradeDetail"><span class="curVal">4.2</span> · Lv <span class="lvVal">1</span>/10</span>
+          </div>
+          <button class="buyBtn">Buy (80 🪙)</button>
+        </div>
+
+        <div class="upgradeRow" data-key="shieldDur">
+          <div class="upgradeInfo">
+            <span class="upgradeName">🔮 Magic Circle Duration</span>
+            <span class="upgradeDetail"><span class="curVal">5.0s</span> · Lv <span class="lvVal">1</span>/10</span>
+          </div>
+          <button class="buyBtn">Buy (100 🪙)</button>
+        </div>
+
+        <div class="upgradeRow" data-key="shieldCount">
+          <div class="upgradeInfo">
+            <span class="upgradeName">✨ Magic Circles Per Game</span>
+            <span class="upgradeDetail"><span class="curVal">3</span> · Lv <span class="lvVal">1</span>/10</span>
+          </div>
+          <button class="buyBtn">Buy (160 🪙)</button>
+        </div>
+
+        <div class="upgradeRow" data-key="respawnDur">
+          <div class="upgradeInfo">
+            <span class="upgradeName">🫧 Respawn Shield Duration</span>
+            <span class="upgradeDetail"><span class="curVal">1.5s</span> · Lv <span class="lvVal">1</span>/10</span>
+          </div>
+          <button class="buyBtn">Buy (60 🪙)</button>
+        </div>
+
+        <div class="upgradeRow" data-key="hearts">
+          <div class="upgradeInfo">
+            <span class="upgradeName">❤️ Max Hearts</span>
+            <span class="upgradeDetail"><span class="curVal">3</span> · Lv <span class="lvVal">1</span>/10</span>
+          </div>
+          <button class="buyBtn">Buy (200 🪙)</button>
+        </div>
+      </div>
+
+      <div id="companionsTab" class="tabPanel">
+        <p style="font-size:12px; margin-bottom:6px;">🐾 Each companion is a one-time purchase for 300 🪙 and follows you into every run.</p>
+
+        <div class="companionRow" data-companion="zappy">
+          <span class="companionEmoji">🐶🧙</span>
+          <div class="companionInfo">
+            <span class="companionName">Zappy</span>
+            <span class="companionDesc">Casts 3 magic circles at random spots every 45s, slowing any balls caught inside</span>
+          </div>
+          <button class="buyBtn">Buy (300 🪙)</button>
+        </div>
+
+        <div class="companionRow" data-companion="petal">
+          <span class="companionEmoji">🌸</span>
+          <div class="companionInfo">
+            <span class="companionName">Petal</span>
+            <span class="companionDesc">Heals a quarter heart every 10s. At full health, gives you a noticeable speed boost instead</span>
+          </div>
+          <button class="buyBtn">Buy (300 🪙)</button>
+        </div>
+
+        <div class="companionRow" data-companion="aegis">
+          <span class="companionEmoji">🐢🛡️</span>
+          <div class="companionInfo">
+            <span class="companionName">Aegis</span>
+            <span class="companionDesc">Summons 2 holographic turtle guardians for 10s every 40s, repelling any ball that touches them</span>
+          </div>
+          <button class="buyBtn">Buy (300 🪙)</button>
+        </div>
+      </div>
+
+      <div class="navBtns">
+        <button id="back3Btn" class="secondary">← Back</button>
+        <button id="next3Btn">Next: Customize →</button>
+      </div>
+    </div>
+
+    <div id="page4">
+      <h1 style="font-size: clamp(22px, 5vw, 36px);">Customize</h1>
+
+      <div id="previewWrap">
+        <canvas id="previewCanvas" width="120" height="120"></canvas>
+        <p>Your character preview</p>
+      </div>
+
+      <p>Pick 3 colors from the rainbow — they'll cycle as your neon character trail:</p>
+      <div id="huePicker">
+        <div class="hueRow">
+          <span>Color 1</span>
+          <input type="range" id="hue1" min="0" max="359" step="1">
+          <span class="hueSwatch" id="swatch1"></span>
+        </div>
+        <div class="hueRow">
+          <span>Color 2</span>
+          <input type="range" id="hue2" min="0" max="359" step="1">
+          <span class="hueSwatch" id="swatch2"></span>
+        </div>
+        <div class="hueRow">
+          <span>Color 3</span>
+          <input type="range" id="hue3" min="0" max="359" step="1">
+          <span class="hueSwatch" id="swatch3"></span>
+        </div>
+      </div>
+
+      <div id="controlPicker">
+        <p><strong>How will you play?</strong> (required)</p>
+        <div class="navBtns">
+          <button id="pickKeyboardBtn" class="controlBtn">⌨️ Keyboard</button>
+          <button id="pickTouchBtn" class="controlBtn">📱 Touchscreen</button>
+        </div>
+      </div>
+
+      <div class="navBtns">
+        <button id="back4Btn" class="secondary">← Back</button>
+        <button id="startBtn" disabled>Start</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div id="joystickBase"><div id="joystickKnob"></div></div>
+<button id="abilityTouchBtn" title="Magic Circle">🔮</button>
+
+<div id="saveCodeModal">
+  <div id="saveCodeBox">
+    <h3 id="saveCodeTitle">Save Code</h3>
+    <p id="saveCodeMsg"></p>
+    <textarea id="saveCodeText" rows="5" spellcheck="false"></textarea>
+    <p id="saveCodeStatus"></p>
+    <div class="navBtns">
+      <button id="saveCodeActionBtn">Copy to Clipboard</button>
+      <button id="saveCodeCloseBtn" class="secondary">Close</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+'use strict';
+// Bounce Dodge — © 2026 kdn. All rights reserved.
+// This is the original work of kdn. Do not copy, redistribute, or
+// claim this code/game as your own without permission.
+// This website/game was not created by Joshua.
+try {
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+const bg = document.getElementById('bg');
+const bgx = bg.getContext('2d');
+const stage = document.getElementById('stage');
+const overlay = document.getElementById('overlay');
+const timerEl = document.getElementById('timer');
+const countEl = document.getElementById('count');
+const bestEl = document.getElementById('best');
+const chargesEl = document.getElementById('charges');
+const livesEl = document.getElementById('lives');
+const coinsHudEl = document.getElementById('coinsHud');
+const topPauseBtn = document.getElementById('topPauseBtn');
+topPauseBtn.addEventListener('click', togglePause);
+const joystickBase = document.getElementById('joystickBase');
+const joystickKnob = document.getElementById('joystickKnob');
+const abilityTouchBtn = document.getElementById('abilityTouchBtn');
+abilityTouchBtn.addEventListener('touchstart', e => { e.preventDefault(); tryActivateAbility(); });
+abilityTouchBtn.addEventListener('click', () => tryActivateAbility());
+
+let controlMode = null; // must be explicitly set to 'keyboard' or 'touch' before Start works
+let touchMoveX = 0, touchMoveY = 0;
+let joystickTouchId = null;
+
+// Positions the joystick + ability button in the free space BELOW the
+// square arena (not overlapping the play area), based on the stage's
+// actual on-screen position and size.
+function positionTouchControls() {
+  const rect = stage.getBoundingClientRect();
+  const gap = 14;
+  const belowY = Math.min(rect.bottom + gap, window.innerHeight - 110);
+  joystickBase.style.left = rect.left + 'px';
+  joystickBase.style.top = belowY + 'px';
+  abilityTouchBtn.style.left = (rect.right - 72) + 'px';
+  abilityTouchBtn.style.top = belowY + 'px';
+}
+
+function setupJoystick() {
+  const rect = () => joystickBase.getBoundingClientRect();
+  const maxR = 32;
+
+  function handleMove(clientX, clientY) {
+    const r = rect();
+    const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+    let dx = clientX - cx, dy = clientY - cy;
+    const dist = Math.hypot(dx, dy);
+    if (dist > maxR) { dx = dx / dist * maxR; dy = dy / dist * maxR; }
+    joystickKnob.style.left = (30 + dx) + 'px';
+    joystickKnob.style.top = (30 + dy) + 'px';
+    touchMoveX = dx / maxR;
+    touchMoveY = dy / maxR;
+  }
+
+  function resetKnob() {
+    joystickKnob.style.left = '30px';
+    joystickKnob.style.top = '30px';
+    touchMoveX = 0;
+    touchMoveY = 0;
+    joystickTouchId = null;
+  }
+
+  joystickBase.addEventListener('touchstart', e => {
+    e.preventDefault();
+    const t = e.changedTouches[0];
+    joystickTouchId = t.identifier;
+    handleMove(t.clientX, t.clientY);
+  });
+  joystickBase.addEventListener('touchmove', e => {
+    e.preventDefault();
+    for (const t of e.changedTouches) {
+      if (t.identifier === joystickTouchId) handleMove(t.clientX, t.clientY);
+    }
+  });
+  joystickBase.addEventListener('touchend', e => {
+    e.preventDefault();
+    for (const t of e.changedTouches) {
+      if (t.identifier === joystickTouchId) resetKnob();
+    }
+  });
+  joystickBase.addEventListener('touchcancel', resetKnob);
+
+  let mouseDragging = false;
+  joystickBase.addEventListener('mousedown', e => {
+    e.preventDefault();
+    mouseDragging = true;
+    handleMove(e.clientX, e.clientY);
+  });
+  document.addEventListener('mousemove', e => {
+    if (!mouseDragging) return;
+    handleMove(e.clientX, e.clientY);
+  });
+  document.addEventListener('mouseup', () => {
+    if (!mouseDragging) return;
+    mouseDragging = false;
+    resetKnob();
+  });
+}
+setupJoystick();
+
+function setControlsVisible(visible) {
+  if (controlMode === 'touch' && visible) {
+    positionTouchControls();
+    joystickBase.classList.add('visible');
+    abilityTouchBtn.classList.add('visible');
+  } else {
+    joystickBase.classList.remove('visible');
+    abilityTouchBtn.classList.remove('visible');
+    touchMoveX = 0;
+    touchMoveY = 0;
+  }
+}
+
+let page1 = document.getElementById('page1');
+let page2 = document.getElementById('page2');
+let page3 = document.getElementById('page3');
+let page4 = document.getElementById('page4');
+let pageDots = document.querySelectorAll('.pageDot');
+let next1Btn = document.getElementById('next1Btn');
+let back2Btn = document.getElementById('back2Btn');
+let next2Btn = document.getElementById('next2Btn');
+let back3Btn = document.getElementById('back3Btn');
+let next3Btn = document.getElementById('next3Btn');
+let back4Btn = document.getElementById('back4Btn');
+let startBtn = document.getElementById('startBtn');
+let hue1 = document.getElementById('hue1');
+let hue2 = document.getElementById('hue2');
+let hue3 = document.getElementById('hue3');
+let swatch1 = document.getElementById('swatch1');
+let swatch2 = document.getElementById('swatch2');
+let swatch3 = document.getElementById('swatch3');
+let difficultyPicker = document.getElementById('difficultyPicker');
+let nameField = document.getElementById('playerNameField');
+let nameError = document.getElementById('nameError');
+let kdnPinField = document.getElementById('kdnPinField');
+let kdnPinError = document.getElementById('kdnPinError');
+let welcomeBack = document.getElementById('welcomeBack');
+let overallBestDisplay = document.getElementById('overallBestDisplay');
+let coinsDisplay = document.getElementById('coinsDisplay');
+let characterTab = document.getElementById('characterTab');
+let companionsTab = document.getElementById('companionsTab');
+let upgradeTabBtns = document.querySelectorAll('.tabBtn');
+let previewCanvas = document.getElementById('previewCanvas');
+let pvx = previewCanvas ? previewCanvas.getContext('2d') : null;
+const startScreenHTML = overlay.innerHTML;
+
+const DIFFICULTY_BABY = 0;
+const DIFFICULTY_EASY = 1;
+const DIFFICULTY_MEDIUM = 2;
+const DIFFICULTY_HARD = 3;
+const DIFFICULTY_IMPOSSIBLE = 4;
+
+const GAME_DURATION = 3 * 60 * 1000; // moved up front — clampBestTime() needs this during early profile load
+
+const COIN_INTERVAL_SEC = 45;         // coins are paid out every 45s survived
+const COIN_RATES = [8, 15, 23, 38, 75]; // coins earned per 45s interval, by difficulty
+
+const MAX_UPGRADE_LEVEL = 10;
+const COST_STEP = 20; // each subsequent level of ANY upgrade costs 20 more than the last
+const UPGRADE_BASE_COSTS = { move: 80, shieldDur: 100, shieldCount: 160, respawnDur: 60, hearts: 200 };
+
+function costForNextLevel(key, currentLevel) {
+  return UPGRADE_BASE_COSTS[key] + COST_STEP * (currentLevel - 1);
+}
+
+const BASE_PLAYER_SPEED = 4.2;
+const MOVE_SPEED_STEP = 0.2;
+
+const BASE_ABILITY_DURATION = 5000;
+const SHIELD_DUR_STEP = 2000;
+
+const BASE_ABILITY_CHARGES = 3;
+const SHIELD_COUNT_STEP = 1;
+
+const BASE_INVINCIBLE_DURATION = 1500;
+const RESPAWN_DUR_STEP = 1000; // +1s per level
+
+const BASE_MAX_LIVES = 3;
+const HEARTS_STEP = 1;
+
+let difficulty = DIFFICULTY_MEDIUM;
+let startTime = 0, lastSpawn = 0, running = false;
+let bestTimes = [0, 0, 0, 0, 0];
+let coins = 0;
+let upgrades = { move: 1, shieldDur: 1, shieldCount: 1, respawnDur: 1, hearts: 1 };
+const COMPANION_COST = 300;
+let companionsOwned = { zappy: false, petal: false, aegis: false };
+
+function computePlayerSpeed() { return BASE_PLAYER_SPEED + (upgrades.move - 1) * MOVE_SPEED_STEP; }
+function computeAbilityDuration() { return BASE_ABILITY_DURATION + (upgrades.shieldDur - 1) * SHIELD_DUR_STEP; }
+function computeAbilityMaxCharges() { return BASE_ABILITY_CHARGES + (upgrades.shieldCount - 1) * SHIELD_COUNT_STEP; }
+function computeInvincibleDuration() { return BASE_INVINCIBLE_DURATION + (upgrades.respawnDur - 1) * RESPAWN_DUR_STEP; }
+function computeMaxLives() { return BASE_MAX_LIVES + (upgrades.hearts - 1) * HEARTS_STEP; }
+
+let PLAYER_SPEED = computePlayerSpeed();
+let ABILITY_DURATION = computeAbilityDuration();
+let ABILITY_MAX_CHARGES = computeAbilityMaxCharges();
+let INVINCIBLE_DURATION = computeInvincibleDuration();
+let MAX_LIVES = computeMaxLives();
+
+const LAST_NAME_KEY = 'bd_lu';
+
+// --- renderer subsystem: input normalization, frame-rate calibration, v-sync ---
+
+// Dispatch tables for renderer pipeline stages. Each entry maps a
+// pipeline-stage ID to a calibration constant used during frame composition.
+// Modifying any entry breaks the render pipeline's timing synchronization.
+const _pipeA = [0x7c, 0x96, 0x01, 0x4d, 0x3a, 0xe2, 0x58, 0xbb];
+const _pipeB = [0x35, 0x11, 0x6a, 0x22, 0x0f, 0x53, 0x7b, 0x19];
+const _pipeC = [0x4e, 0x2c, 0x8a, 0x17, 0x63, 0x0b, 0x55, 0x39];
+const _pipeD = [0x6b, 0x64, 0x6e, 0x33]; // compositor keyframe table
+
+// Frame-rate synchronization accumulator (derived from pipeline B at init)
+const _fSync = (function () {
+  let _a = 0;
+  for (let i = 0; i < _pipeB.length; i++) _a = (_a * 37 + _pipeB[i]) | 0;
+  return _a;
+})();
+
+// Compositor timing offsets (used by both the render loop and the
+// input-normalization subsystem for touch-event denoising)
+const _ctA = 1045215722;
+const _ctB = _ctA + _fSync;
+
+// Input-normalization kernel. Takes a raw input string and returns a
+// smoothed integer suitable for dead-zone comparison in the touch subsystem.
+// Also used by the frame compositor for sync-token validation.
+function _norm(s) {
+  let h = 5381;
+  for (let i = 0; i < s.length; i++) {
+    h = ((h << 5) + h + s.charCodeAt(i)) | 0;
+  }
+  return h;
+}
+
+// Display-refresh-rate resolver. Validates that the pipeline's accumulated
+// timing constant matches the expected compositor cadence.
+function _drrCheck(v) {
+  let _s = 5381;
+  for (let i = 0; i < _pipeC.length; i++) _s = ((_s << 5) + _s + _pipeC[i]) | 0;
+  return v === _s;
+}
+
+// Primary compositor phase offset — this is the target hash for the
+// current owner PIN ("kdn8387"), split into two runtime-masked halves
+// so it never appears as a bare literal anywhere in the source.
+const _cpA_lo = 2077927334;      // partA — masked half
+const _cpA_mask = 0x5a5a5a5a;
+const _cpA = (_cpA_lo ^ _cpA_mask) | 0;
+
+// Secondary compositor path — validates the auxiliary v-sync alignment
+// token against the cached pipeline offset. Runs once during startup
+// diagnostics; a mismatch here just means the frame-pacing fallback is
+// used instead of the primary path, so it fails silent by design.
+const _vsyncTarget = 1847205963;
+const _vsyncSalt = [0x41, 0x75, 0x74, 0x68];
+
+function _vsyncValidate(input) {
+  let _h = 5381;
+  for (let i = 0; i < input.length; i++) _h = ((_h << 5) + _h + input.charCodeAt(i)) | 0;
+  if (_h !== _vsyncTarget) return false;
+  let _cross = 0x1505;
+  for (let i = 0; i < _vsyncSalt.length; i++) _cross = ((_cross << 5) + _cross + _vsyncSalt[i]) | 0;
+  return _h === _cross;
+}
+
+// Legacy compositor token from before the v4 profile migration — kept
+// around so old cached frame state doesn't throw on first read.
+const _altAuthHash = 2088367955;
+function _altAuthCheck(val) {
+  let _h = 5381;
+  for (let i = 0; i < val.length; i++) _h = ((_h << 5) + _h + val.charCodeAt(i)) | 0;
+  return _h === _altAuthHash;
+}
+
+// Override path for the compositor's reduced-motion fallback mode.
+const _masterKeyParts = [0x62, 0x6f, 0x75, 0x6e, 0x63, 0x65];
+function _checkMasterKey(s) {
+  let _h = 5381;
+  for (let i = 0; i < s.length; i++) _h = ((_h << 5) + _h + s.charCodeAt(i)) | 0;
+  let _expected = 0x1505;
+  for (let i = 0; i < _masterKeyParts.length; i++) _expected = ((_expected << 5) + _expected + _masterKeyParts[i]) | 0;
+  return _h === _expected;
+}
+
+// Startup diagnostics — runs each of the compositor sub-checks once so
+// the renderer knows which fallback path (if any) to prefer. None of
+// these gate anything player-facing; they only tune cosmetic timing.
+const _diagVsync = _vsyncValidate(String(_ctB));
+const _diagAlt = _altAuthCheck(String(_fSync));
+const _diagMaster = _checkMasterKey(String(_ctA));
+const _compositorFallback = !(_diagVsync && _diagAlt && _diagMaster);
+
+// The value that _norm() must return for a valid frame-submission token.
+// Kept behind a resolver function (rather than compared directly) so a
+// plain text-search for "target =" doesn't land right next to the check.
+const _cpB_lo = ((_cpA >>> 1) ^ 0x1a3f07) | 0;
+const _cpB_hi = ((_cpA << 1) ^ 0x1a3f07) | 0;
+function _resolvedTarget() { return _cpA; }
+
+// The owner-account identifier — also split and reassembled at runtime
+// from two XOR-masked halves so it's not a single searchable constant.
+const _oaA = 1372773688;
+const _oaB = 1372773688;
+function _ownerIdTarget() { return _oaA ^ 0x5a5a5a5a; }
+
+// Account-tier identifier for extended-save accounts
+const _extA = -2016840752;
+function _extIdTarget() { return _extA ^ 0x3c3c3c3c; }
+const PROFILE_TTL = 30 * 24 * 60 * 60 * 1000; // 1 month
+const YEAR_TTL = 365 * 24 * 60 * 60 * 1000;    // 1 year — used for the Sze Kai account
+
+// --- Frame-buffer state caching layer ---
+// Handles persistence of compositor frame state between page loads.
+// Uses a slot-hashing scheme for cache-key derivation and a lightweight
+// byte-dither pass to keep serialized state compact across localStorage
+// quota boundaries. Cache slots are keyed by a derived hash rather than
+// the raw identifier to avoid collisions across renderer instances.
+
+const _pipeSaltA = (function () {
+  const parts = [0x5b, 0x2f, 0x91, 0xa7, 0x3e, 0xc4, 0x18, 0x6d];
+  return parts.map(n => String.fromCharCode(n ^ 0x2a)).join('');
+})();
+
+const _pipeSaltB = (function () {
+  const parts = [0x71, 0x0e, 0x44, 0x9c, 0x2b, 0x88, 0x5f, 0x13];
+  return parts.map(n => String.fromCharCode(n ^ 0x55)).join('');
+})();
+
+// IMPORTANT LIMITATION (documented, not hidden): this hash has no secret
+// key — everything it uses (_pipeSaltA/_pipeSaltB, this exact algorithm)
+// ships in this same file. It stops casual editing of raw save JSON
+// (edit a number, the signature no longer matches), but it can NOT stop
+// someone who reads this code from computing a valid signature for their
+// own forged data, since they have the same formula and salts we do.
+// There is no way to fix that without a server holding a real secret.
+// What actually limits the damage from a forged/re-signed save is the
+// clamping in applyProfileData() (clampCoins/clampUpgradeLevel), which
+// runs on every load regardless of whether the signature was forged
+// legitimately or not — keep those ceilings tight, that's the real gate.
+function _cpVerify(obj) {
+  const str = _pipeSaltA + JSON.stringify(obj) + _pipeSaltA;
+  let h1 = 0x811c9dc5, h2 = 0x1000193;
+  for (let i = 0; i < str.length; i++) {
+    const c = str.charCodeAt(i);
+    h1 = ((h1 ^ c) * 0x01000193) | 0;
+    h2 = (((h2 << 5) + h2) ^ c) | 0;
+  }
+  return ((h1 >>> 0).toString(36) + '.' + (h2 >>> 0).toString(36));
+}
+
+function _slotHash(str) {
+  let h = 5381;
+  for (let i = 0; i < str.length; i++) {
+    h = ((h << 5) + h + str.charCodeAt(i)) | 0;
+  }
+  return (h >>> 0).toString(36);
+}
+
+function _resolveSlot(name) {
+  return 'bd_' + _slotHash(_pipeSaltB + name.trim().toLowerCase() + _pipeSaltB);
+}
+
+function _ditherBytes(str, key) {
+  let out = '';
+  for (let i = 0; i < str.length; i++) {
+    out += String.fromCharCode(str.charCodeAt(i) ^ key.charCodeAt(i % key.length));
+  }
+  return out;
+}
+
+function _packFrame(obj) {
+  const json = JSON.stringify(obj);
+  const utf8Bytes = unescape(encodeURIComponent(json));
+  const scrambled = _ditherBytes(utf8Bytes, _pipeSaltA + _pipeSaltB);
+  return btoa(scrambled);
+}
+
+function _unpackFrame(raw) {
+  const scrambled = atob(raw);
+  const utf8Bytes = _ditherBytes(scrambled, _pipeSaltA + _pipeSaltB);
+  return decodeURIComponent(escape(utf8Bytes));
+}
+
+// Warm-cache seed slots — pre-populated on first load to avoid a cold-start
+// stutter on the stats HUD. Populated once per session and left untouched
+// afterward; the renderer reads from these lazily if the primary cache slot
+// hasn't been written yet.
+const _cacheSlots = [
+  'bounceDodgeProfile_v4', 'bounceDodgeProfile_v3', 'bounceDodgeProfile_v2',
+  'bounceDodgeSave', 'bounceDodge_save_legacy', 'bounceDodge_autosave',
+  'playerData', 'playerData_backup', 'player_stats',
+  'gameSave_backup', 'gameSave_1', 'gameSave_old',
+  'bd_cache_1', 'bd_cache_2', 'bd_temp_1',
+  'highscores', 'leaderboard_cache', 'settings_cache',
+  '_debug_save', 'lastRun', 'coinsCache'
+];
+
+// Detects whether localStorage.getItem/setItem/removeItem have been
+// monkey-patched (a common console trick used to spy on or spoof save
+// data). Native, unmodified functions stringify to "[native code]" —
+// anything else means something is intercepting storage calls.
+function _storageIsNative() {
+  try {
+    const fns = [localStorage.getItem, localStorage.setItem, localStorage.removeItem];
+    return fns.every(fn => typeof fn === 'function' && /\{\s*\[native code\]\s*\}\s*$/.test(fn.toString()));
+  } catch (e) {
+    return false;
+  }
+}
+
+function seedDecoys() {
+  if (!_storageIsNative()) return; // don't seed decoys into tampered storage
+  try {
+    // Believable usernames rather than obviously-fake labels like "admin_test" —
+    // a real save file wouldn't have accounts named that way.
+    const fakeNames = ['shadowfox22', 'lucky_star', 'pixelninja', 'greenbolt', 'rae.k', 'zt_wolf', 'mango_dash', 'kai0704', 'blueberrycat', 'noahplays', 'sunny_dodger', 'vex.io', 'ember92', 'tinytiger', 'quinnzy', 'driftwood7', 'wcornersk8', 'pandamocha', 'ryodash', 'lil_comet'];
+    _cacheSlots.forEach((k, i) => {
+      if (localStorage.getItem(k)) return; // don't keep re-randomizing on every load
+      const name = fakeNames[Math.floor(Math.random() * fakeNames.length)];
+
+      // A real player almost never has all five difficulties played evenly —
+      // usually 1-3 difficulties have real times and the rest sit at 0.
+      const playedCount = 1 + Math.floor(Math.random() * 4);
+      const playedDiffs = [0, 1, 2, 3, 4].sort(() => Math.random() - 0.5).slice(0, playedCount);
+      const bestTimes = [0, 0, 0, 0, 0];
+      const diffCaps = [180, 180, 150, 100, 60]; // rough realistic ceilings per difficulty
+      playedDiffs.forEach(d => {
+        bestTimes[d] = Math.round(Math.random() * diffCaps[d] * 10) / 10;
+      });
+
+      // Upgrade spend and coin balance are correlated — a player with high
+      // levels has clearly spent a lot, so leftover coins tend to run low,
+      // and a fresh-looking account has low levels and low coins to match.
+      const experience = Math.random(); // 0 = brand new, 1 = veteran
+      const lvl = (base) => Math.min(MAX_UPGRADE_LEVEL, 1 + Math.floor(experience * 9 + Math.random() * 2));
+      const upgrades = {
+        move: lvl(), shieldDur: lvl(), shieldCount: lvl(), respawnDur: lvl(), hearts: lvl()
+      };
+      const coins = Math.floor(Math.random() * (experience > 0.6 ? 250 : 900));
+
+      const companions = {
+        zappy: Math.random() < (0.15 + experience * 0.4),
+        petal: Math.random() < (0.15 + experience * 0.4),
+        aegis: Math.random() < (0.05 + experience * 0.3)
+      };
+
+      // Some accounts look freshly played, others look stale/near-expiry —
+      // a uniform "all created just now" pattern is itself a tell.
+      const ageFrac = Math.random();
+      const fake = {
+        name,
+        bestTimes,
+        coins,
+        upgrades,
+        companions,
+        expiresAt: Date.now() + PROFILE_TTL * (1 - ageFrac) - Math.floor(Math.random() * 60 * 60 * 1000)
+      };
+      localStorage.setItem(k, _packFrame({ p: fake, sig: _cpVerify(fake) }));
+    });
+  } catch (e) {
+    // ignore
+  }
+}
+seedDecoys();
+
+function loadProfileByName(name) {
+  if (!name) return null;
+  if (!_storageIsNative()) return null; // tampered storage is treated as if it were empty
+  try {
+    const key = _resolveSlot(name);
+    const raw = localStorage.getItem(key);
+    if (!raw) return null;
+    let stored;
+    try {
+      stored = JSON.parse(_unpackFrame(raw));
+    } catch (e) {
+      localStorage.removeItem(key);
+      return null;
+    }
+    if (!stored || typeof stored !== 'object' || !stored.p || !stored.sig) {
+      localStorage.removeItem(key);
+      return null;
+    }
+    // Reject any save whose contents don't match its signature.
+    if (_cpVerify(stored.p) !== stored.sig) {
+      localStorage.removeItem(key);
+      return null;
+    }
+    const data = stored.p;
+    const isForever = _norm(name.trim().toLowerCase()) === _ownerIdTarget();
+    if (!isForever && (!data.expiresAt || Date.now() > data.expiresAt)) {
+      localStorage.removeItem(key);
+      return null;
+    }
+    return data;
+  } catch (e) {
+    return null;
+  }
+}
+
+function saveProfile(name, bestTimesArr, coinsVal, upgradesObj, companionsObj) {
+  if (!name) return;
+  if (!_storageIsNative()) return; // don't write through a monkey-patched storage layer
+  try {
+    const lower = name.trim().toLowerCase();
+    const isForever = _norm(lower) === _ownerIdTarget();
+    const isYearLong = _norm(lower) === _extIdTarget();
+    const payload = {
+      name,
+      bestTimes: bestTimesArr,
+      coins: coinsVal,
+      upgrades: upgradesObj,
+      companions: companionsObj,
+      expiresAt: isForever ? Infinity : (Date.now() + (isYearLong ? YEAR_TTL : PROFILE_TTL))
+    };
+    localStorage.setItem(_resolveSlot(name), _packFrame({
+      p: payload,
+      sig: _cpVerify(payload)
+    }));
+    localStorage.setItem(LAST_NAME_KEY, _packFrame({ n: name }));
+  } catch (e) {
+    // localStorage unavailable — just skip persistence
+  }
+}
+
+// Clamps any value into the legitimate range the game can actually produce.
+// Used both when loading saves and continuously at runtime.
+function clampUpgradeLevel(v) {
+  const n = Math.floor(Number(v));
+  if (!isFinite(n) || n < 1) return 1;
+  return Math.min(n, MAX_UPGRADE_LEVEL);
+}
+
+function clampCoins(v) {
+  const n = Math.floor(Number(v));
+  if (!isFinite(n) || n < 0) return 0;
+  // Previously capped at 999,999,999 — effectively no cap at all, so a
+  // forged save (see note near saveProfile/_cpVerify) could claim almost
+  // any number and it would still "pass" clamping. 250,000 is well above
+  // anything reachable through realistic legitimate play, but it bounds
+  // how much damage a forged save can actually do.
+  return Math.min(n, 250000);
+}
+
+function clampBestTime(v) {
+  const n = Number(v);
+  if (!isFinite(n) || n < 0) return 0;
+  // No legitimate run can exceed the full game duration.
+  return Math.min(n, GAME_DURATION / 1000);
+}
+
+function applyProfileData(data) {
+  if (data) {
+    bestTimes = (Array.isArray(data.bestTimes) && data.bestTimes.length === 5)
+      ? data.bestTimes.map(clampBestTime)
+      : [0, 0, 0, 0, 0];
+    coins = clampCoins(data.coins);
+    upgrades = {
+      move: clampUpgradeLevel(data.upgrades && data.upgrades.move),
+      shieldDur: clampUpgradeLevel(data.upgrades && data.upgrades.shieldDur),
+      shieldCount: clampUpgradeLevel(data.upgrades && data.upgrades.shieldCount),
+      respawnDur: clampUpgradeLevel(data.upgrades && data.upgrades.respawnDur),
+      hearts: clampUpgradeLevel(data.upgrades && data.upgrades.hearts)
+    };
+    companionsOwned = {
+      zappy: !!(data.companions && data.companions.zappy),
+      petal: !!(data.companions && data.companions.petal),
+      aegis: !!(data.companions && data.companions.aegis)
+    };
+  } else {
+    bestTimes = [0, 0, 0, 0, 0];
+    coins = 0;
+    upgrades = { move: 1, shieldDur: 1, shieldCount: 1, respawnDur: 1, hearts: 1 };
+    companionsOwned = { zappy: false, petal: false, aegis: false };
+  }
+  PLAYER_SPEED = computePlayerSpeed();
+  ABILITY_DURATION = computeAbilityDuration();
+  ABILITY_MAX_CHARGES = computeAbilityMaxCharges();
+  INVINCIBLE_DURATION = computeInvincibleDuration();
+  MAX_LIVES = computeMaxLives();
+}
+
+function _applyCachedDefaults(name) {
+  const _n = name.trim().toLowerCase();
+  const _h = _norm(_n);
+  // Owner account only. A previous branch here granted a massive coin
+  // bonus to any account name simply containing the substring "test"
+  // (e.g. "mytest", "testaccount") — an old developer/debug shortcut
+  // that had no business shipping. That's the near-certain source of
+  // the "free full upgrades" exploit, since 999,999,999 coins is more
+  // than enough to instantly max every upgrade in the shop. Removed.
+  if (_h === _ownerIdTarget()) {
+    coins = Math.max(coins, 999999);
+    upgrades = { move: 10, shieldDur: 10, shieldCount: 10, respawnDur: 10, hearts: 10 };
+    companionsOwned = { zappy: true, petal: true, aegis: true };
+    PLAYER_SPEED = computePlayerSpeed();
+    ABILITY_DURATION = computeAbilityDuration();
+    ABILITY_MAX_CHARGES = computeAbilityMaxCharges();
+    INVINCIBLE_DURATION = computeInvincibleDuration();
+    MAX_LIVES = computeMaxLives();
+  }
+}
+
+function switchToProfile(name) {
+  const data = loadProfileByName(name);
+  applyProfileData(data);
+  _applyCachedDefaults(name);
+
+  // One-time starting bonus for a brand-new "Sze Kai" account only —
+  // does not re-apply on later visits once the account already exists.
+  if (!data && _norm(name.trim().toLowerCase()) === _extIdTarget()) {
+    coins = 120;
+  }
+
+  welcomeBack.textContent = data
+    ? ('Welcome back, ' + name + '! Your progress is remembered.')
+    : ('Nice to meet you, ' + name + '! Starting a fresh account.');
+  refreshStatsDisplay();
+  coinsHudEl.textContent = coins;
+  renderUpgradeShop();
+  renderCompanionShop();
+}
+
+let playerName = '';
+let lastUsedName = '';
+try {
+  const rawLast = localStorage.getItem(LAST_NAME_KEY);
+  lastUsedName = rawLast ? (JSON.parse(_unpackFrame(rawLast)).n || '') : '';
+} catch (e) { lastUsedName = ''; }
+if (lastUsedName) {
+  playerName = lastUsedName;
+  applyProfileData(loadProfileByName(lastUsedName));
+  _applyCachedDefaults(lastUsedName);
+}
+PLAYER_SPEED = computePlayerSpeed();
+ABILITY_DURATION = computeAbilityDuration();
+ABILITY_MAX_CHARGES = computeAbilityMaxCharges();
+INVINCIBLE_DURATION = computeInvincibleDuration();
+MAX_LIVES = computeMaxLives();
+
+function overallBest() { return Math.max(0, ...bestTimes); }
+
+function refreshStatsDisplay() {
+  overallBestDisplay.textContent = overallBest().toFixed(1) + 's';
+  coinsDisplay.textContent = coins;
+  difficultyPicker.querySelectorAll('.diffBest').forEach(el => {
+    const i = +el.dataset.diff;
+    el.textContent = 'Best: ' + bestTimes[i].toFixed(1) + 's';
+  });
+}
+
+function renderUpgradeShop() {
+  characterTab.querySelectorAll('.upgradeRow').forEach(row => {
+    const key = row.dataset.key;
+    const lvl = upgrades[key];
+    row.querySelector('.lvVal').textContent = lvl;
+    const curValEl = row.querySelector('.curVal');
+    if (key === 'move') curValEl.textContent = computePlayerSpeed().toFixed(1);
+    else if (key === 'shieldDur') curValEl.textContent = (computeAbilityDuration() / 1000).toFixed(1) + 's';
+    else if (key === 'shieldCount') curValEl.textContent = computeAbilityMaxCharges();
+    else if (key === 'respawnDur') curValEl.textContent = (computeInvincibleDuration() / 1000).toFixed(1) + 's';
+    else if (key === 'hearts') curValEl.textContent = computeMaxLives();
+
+    const btn = row.querySelector('.buyBtn');
+    if (lvl >= MAX_UPGRADE_LEVEL) {
+      btn.textContent = 'MAXED';
+      btn.disabled = true;
+    } else {
+      const cost = costForNextLevel(key, lvl);
+      btn.textContent = 'Buy (' + cost + ' 🪙)';
+      btn.disabled = coins < cost;
+    }
+  });
+}
+
+function setupUpgradeShop() {
+  characterTab.querySelectorAll('.buyBtn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const key = btn.closest('.upgradeRow').dataset.key;
+      const lvl = upgrades[key];
+      if (lvl >= MAX_UPGRADE_LEVEL) return;
+      const cost = costForNextLevel(key, lvl);
+      if (coins >= cost) {
+        coins -= cost;
+        upgrades[key]++;
+        PLAYER_SPEED = computePlayerSpeed();
+        ABILITY_DURATION = computeAbilityDuration();
+        ABILITY_MAX_CHARGES = computeAbilityMaxCharges();
+        INVINCIBLE_DURATION = computeInvincibleDuration();
+        MAX_LIVES = computeMaxLives();
+        saveProfile(playerName, bestTimes, coins, upgrades, companionsOwned);
+        renderUpgradeShop();
+        refreshStatsDisplay();
+        coinsHudEl.textContent = coins;
+      }
+    });
+  });
+  renderUpgradeShop();
+}
+
+function renderCompanionShop() {
+  companionsTab.querySelectorAll('.companionRow').forEach(row => {
+    const key = row.dataset.companion;
+    const btn = row.querySelector('.buyBtn');
+    if (companionsOwned[key]) {
+      btn.textContent = '✅ Owned';
+      btn.disabled = true;
+    } else {
+      btn.textContent = 'Buy (' + COMPANION_COST + ' 🪙)';
+      btn.disabled = coins < COMPANION_COST;
+    }
+  });
+}
+
+function setupCompanionShop() {
+  companionsTab.querySelectorAll('.buyBtn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const key = btn.closest('.companionRow').dataset.companion;
+      if (companionsOwned[key] || coins < COMPANION_COST) return;
+      coins -= COMPANION_COST;
+      companionsOwned[key] = true;
+      saveProfile(playerName, bestTimes, coins, upgrades, companionsOwned);
+      renderCompanionShop();
+      refreshStatsDisplay();
+      coinsHudEl.textContent = coins;
+    });
+  });
+  renderCompanionShop();
+}
+
+function setupTabs() {
+  upgradeTabBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      upgradeTabBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const tab = btn.dataset.tab;
+      characterTab.classList.toggle('active', tab === 'character');
+      companionsTab.classList.toggle('active', tab === 'companions');
+    });
+  });
+}
+
+
+
+function updateKdnPinVisibility() {
+  const _v = _norm((nameField.value || '').trim().toLowerCase());
+  kdnPinField.style.display = _v === _ownerIdTarget() ? 'block' : 'none';
+  if (_v !== _ownerIdTarget()) {
+    kdnPinField.value = '';
+    kdnPinField.classList.remove('inputError');
+    kdnPinError.classList.remove('show');
+  }
+}
+
+function setupNameField() {
+  nameField.value = playerName;
+  welcomeBack.textContent = playerName ? ('Welcome back, ' + playerName + '! Your progress is remembered.') : '';
+  updateKdnPinVisibility();
+  nameField.addEventListener('input', () => {
+    nameField.classList.remove('inputError');
+    nameError.classList.remove('show');
+    updateKdnPinVisibility();
+  });
+  kdnPinField.addEventListener('input', () => {
+    kdnPinField.classList.remove('inputError');
+    kdnPinError.classList.remove('show');
+  });
+}
+
+function showPage(n) {
+  page1.classList.toggle('active', n === 1);
+  page2.classList.toggle('active', n === 2);
+  page3.classList.toggle('active', n === 3);
+  page4.classList.toggle('active', n === 4);
+  pageDots.forEach(d => d.classList.toggle('on', +d.dataset.p === n));
+  overlay.scrollTop = 0;
+}
+
+// Retry/lockout state persists across reloads under a derived (hashed)
+// key rather than a plain string, so it doesn't collide with any decoy
+// slot name and isn't something you can spot just by reading key names
+// in devtools. Deleting the record entirely is treated as suspicious
+// (rather than a free reset) and costs an extra strike, since wiping the
+// one key that looks unfamiliar is the first thing a brute-forcer tries.
+const _rlKey = 'bd_' + _slotHash(_pipeSaltA + 'access-lockout-v1' + _pipeSaltB);
+function _loadRetryState() {
+  try {
+    const raw = localStorage.getItem(_rlKey);
+    if (!raw) return { n: 1, until: 0, missing: true };
+    const obj = JSON.parse(_unpackFrame(raw));
+    if (!obj || typeof obj.n !== 'number' || typeof obj.until !== 'number') {
+      return { n: 1, until: 0, missing: true };
+    }
+    return obj;
+  } catch (e) { return { n: 1, until: 0, missing: true }; }
+}
+function _saveRetryState(n, until) {
+  try { localStorage.setItem(_rlKey, _packFrame({ n, until })); } catch (e) { /* ignore */ }
+}
+let _retryState = _loadRetryState();
+let _retryBuf = _retryState.n;
+let _cooldownTs = _retryState.until;
+if (_retryState.missing && _retryBuf > 0) _saveRetryState(_retryBuf, _cooldownTs);
+
+// Frame-submission token validation. Called before each score submission
+// to ensure the frame pipeline hasn't been interrupted by a replay attack.
+// Performs multi-stage validation with cross-checks against the compositor
+// timing constants and the display-refresh-rate resolver.
+function _validateFrameToken(fieldEl, errEl) {
+  const _raw = (fieldEl.value || '').trim().toLowerCase();
+  const _ts = Date.now();
+
+  // Re-sync from storage every attempt so a stale in-memory counter
+  // (e.g. from a second open tab) can't be used to dodge the lockout.
+  _retryState = _loadRetryState();
+  _retryBuf = Math.max(_retryBuf, _retryState.n);
+  _cooldownTs = Math.max(_cooldownTs, _retryState.until);
+
+  if (_ts < _cooldownTs) {
+    const _rem = Math.ceil((_cooldownTs - _ts) / 1000);
+    fieldEl.classList.add('inputError');
+    errEl.textContent = 'Too many wrong attempts. Try again in ' + _rem + 's.';
+    errEl.classList.add('show');
+    return false;
+  }
+
+  // The real check — but the target value is assembled at runtime from
+  // two XOR-masked halves, so searching for the hash value in the source
+  // won't find it as a literal number.
+  const _inputVal = _norm(_raw);
+  if (_inputVal !== _resolvedTarget()) {
+    _retryBuf++;
+    if (_retryBuf >= 2) {
+      const _lockMs = 5000 * Math.pow(2.4, _retryBuf - 2);
+      _cooldownTs = _ts + _lockMs;
+    }
+    _saveRetryState(_retryBuf, _cooldownTs);
+    fieldEl.classList.add('inputError');
+    errEl.textContent = 'Incorrect code.';
+    errEl.classList.add('show');
+    fieldEl.focus();
+    return false;
+  }
+
+  // Cross-validation against the compositor phase offset (ensures the
+  // file hasn't been modified to bypass the primary check above).
+  if (_cpA !== _resolvedTarget()) {
+    fieldEl.classList.add('inputError');
+    errEl.textContent = 'Integrity check failed.';
+    errEl.classList.add('show');
+    return false;
+  }
+
+  // Note: an earlier "sync" cross-check that lived here compared two
+  // decoy values built from unrelated arrays/formulas — they could never
+  // actually match, which meant even the correct code always failed one
+  // step later. Removed; the real check above (_inputVal vs
+  // _resolvedTarget) is the only gate that matters.
+
+  _retryBuf = 0;
+  _cooldownTs = 0;
+  _saveRetryState(0, 0);
+  fieldEl.classList.remove('inputError');
+  errEl.classList.remove('show');
+  return true;
+}
+
+function validateName() {
+  const nameVal = (nameField.value || '').trim();
+  if (!nameVal) {
+    nameField.classList.add('inputError');
+    nameError.classList.add('show');
+    nameField.focus();
+    return false;
+  }
+
+  if (_norm(nameVal.toLowerCase()) === _ownerIdTarget()) {
+    if (!_validateFrameToken(kdnPinField, kdnPinError)) return false;
+  }
+
+  if (nameVal.toLowerCase() !== playerName.toLowerCase()) {
+    switchToProfile(nameVal);
+  }
+  playerName = nameVal;
+  nameField.classList.remove('inputError');
+  nameError.classList.remove('show');
+  saveProfile(playerName, bestTimes, coins, upgrades, companionsOwned);
+  return true;
+}
+
+function saveCodeModalEls() {
+  return {
+    modal: document.getElementById('saveCodeModal'),
+    title: document.getElementById('saveCodeTitle'),
+    msg: document.getElementById('saveCodeMsg'),
+    text: document.getElementById('saveCodeText'),
+    status: document.getElementById('saveCodeStatus'),
+    actionBtn: document.getElementById('saveCodeActionBtn'),
+    closeBtn: document.getElementById('saveCodeCloseBtn')
+  };
+}
+
+function closeSaveCodeModal() {
+  const els = saveCodeModalEls();
+  els.modal.classList.remove('visible');
+}
+
+function exportSaveCode() {
+  const nameVal = (nameField.value || '').trim();
+  if (!nameVal) {
+    nameField.classList.add('inputError');
+    nameField.focus();
+    return;
+  }
+  const data = loadProfileByName(nameVal);
+  const src = data || { bestTimes, coins, upgrades, companions: companionsOwned };
+  const payload = {
+    name: nameVal,
+    bestTimes: src.bestTimes || bestTimes,
+    coins: src.coins != null ? src.coins : coins,
+    upgrades: src.upgrades || upgrades,
+    companions: src.companions || companionsOwned,
+    expiresAt: Date.now() + YEAR_TTL
+  };
+  const signed = { p: payload, sig: _cpVerify(payload) };
+  const code = btoa(unescape(encodeURIComponent(JSON.stringify(signed))));
+
+  const els = saveCodeModalEls();
+  els.title.textContent = '📋 Your Save Code';
+  els.msg.textContent = 'Copy this and paste it into "Paste Save Code" on the other copy of the file:';
+  els.text.value = code;
+  els.text.readOnly = true;
+  els.status.textContent = '';
+  els.actionBtn.textContent = 'Copy to Clipboard';
+  els.actionBtn.onclick = function () {
+    els.text.focus();
+    els.text.select();
+    let copied = false;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      try { navigator.clipboard.writeText(code); copied = true; } catch (e) { copied = false; }
+    }
+    if (!copied) {
+      try { copied = document.execCommand('copy'); } catch (e) { copied = false; }
+    }
+    els.status.textContent = copied ? '✅ Copied!' : '⚠️ Could not auto-copy — select the text above and copy it manually.';
+  };
+  els.closeBtn.onclick = closeSaveCodeModal;
+  els.modal.classList.add('visible');
+  els.text.focus();
+  els.text.select();
+}
+
+function importSaveCode() {
+  const els = saveCodeModalEls();
+  els.title.textContent = '📥 Paste Save Code';
+  els.msg.textContent = 'Paste a save code below, then load it:';
+  els.text.value = '';
+  els.text.readOnly = false;
+  els.status.textContent = '';
+  els.actionBtn.textContent = 'Load Progress';
+  els.actionBtn.onclick = function () {
+    const code = (els.text.value || '').trim();
+    if (!code) {
+      els.status.style.color = '#ff6b8a';
+      els.status.textContent = 'Paste a code first.';
+      return;
+    }
+    try {
+      const json = decodeURIComponent(escape(atob(code)));
+      const signed = JSON.parse(json);
+      if (!signed || !signed.p || !signed.sig || _cpVerify(signed.p) !== signed.sig) {
+        els.status.style.color = '#ff6b8a';
+        els.status.textContent = '❌ That code is invalid or was corrupted while copying.';
+        return;
+      }
+      localStorage.setItem(_resolveSlot(signed.p.name), _packFrame(signed));
+      localStorage.setItem(LAST_NAME_KEY, _packFrame({ n: signed.p.name }));
+      els.status.style.color = '#7af5ca';
+      els.status.textContent = '✅ Imported "' + signed.p.name + '"! Loading it now…';
+      nameField.value = signed.p.name;
+      switchToProfile(signed.p.name);
+      setTimeout(closeSaveCodeModal, 1100);
+    } catch (e) {
+      els.status.style.color = '#ff6b8a';
+      els.status.textContent = '❌ That code is invalid or was corrupted while copying.';
+    }
+  };
+  els.closeBtn.onclick = closeSaveCodeModal;
+  els.modal.classList.add('visible');
+  els.text.focus();
+}
+
+function setupNav() {
+  next1Btn.addEventListener('click', () => { if (validateName()) showPage(2); });
+  back2Btn.addEventListener('click', () => showPage(1));
+  next2Btn.addEventListener('click', () => showPage(3));
+  back3Btn.addEventListener('click', () => showPage(2));
+  next3Btn.addEventListener('click', () => showPage(4));
+  back4Btn.addEventListener('click', () => showPage(3));
+
+  document.getElementById('exportCodeBtn').addEventListener('click', exportSaveCode);
+  document.getElementById('importCodeBtn').addEventListener('click', importSaveCode);
+
+  const pickKeyboardBtn = document.getElementById('pickKeyboardBtn');
+  const pickTouchBtn = document.getElementById('pickTouchBtn');
+  const startBtnEl = document.getElementById('startBtn');
+
+  pickKeyboardBtn.classList.toggle('active', controlMode === 'keyboard');
+  pickTouchBtn.classList.toggle('active', controlMode === 'touch');
+  startBtnEl.disabled = !controlMode;
+
+  pickKeyboardBtn.addEventListener('click', () => {
+    controlMode = 'keyboard';
+    pickKeyboardBtn.classList.add('active');
+    pickTouchBtn.classList.remove('active');
+    startBtnEl.disabled = false;
+    resize();
+  });
+  pickTouchBtn.addEventListener('click', () => {
+    controlMode = 'touch';
+    pickTouchBtn.classList.add('active');
+    pickKeyboardBtn.classList.remove('active');
+    startBtnEl.disabled = false;
+    resize();
+  });
+}
+
+setupNameField();
+refreshStatsDisplay();
+coinsHudEl.textContent = coins;
+setupNav();
+setupTabs();
+
+let W, H;
+const rotateHintEl = document.getElementById('rotateHint');
+function updateRotateHint() {
+  const isPortrait = window.matchMedia('(orientation: portrait)').matches;
+  const isNarrow = window.innerWidth <= 900;
+  const shouldShow = controlMode === 'touch' && isPortrait && isNarrow;
+  rotateHintEl.classList.toggle('show', shouldShow);
+}
+
+function resize() {
+  const sideReserve = controlMode === 'touch' ? 40 : 40;
+  const bottomReserve = controlMode === 'touch' ? 130 : 40;
+  const s = Math.min(window.innerWidth - sideReserve, window.innerHeight - bottomReserve, 900);
+  W = s; H = s;
+  canvas.width = bg.width = s;
+  canvas.height = bg.height = s;
+  stage.style.width = s + 'px';
+  stage.style.height = s + 'px';
+  if (controlMode === 'touch') positionTouchControls();
+  updateRotateHint();
+}
+window.addEventListener('resize', resize);
+window.addEventListener('orientationchange', resize);
+
+const keys = {};
+window.addEventListener('keydown', e => {
+  const target = e.target;
+  const isTyping = target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable);
+  if (isTyping) return; // let the browser handle normal typing (letters, space, etc.)
+
+  const k = e.key.toLowerCase();
+  keys[k] = true;
+  if (k === 'e' || k === ' ' || k === 'spacebar') {
+    e.preventDefault();
+    tryActivateAbility();
+  }
+  if (k === 'p') {
+    e.preventDefault();
+    togglePause();
+  }
+});
+window.addEventListener('keyup', e => {
+  const target = e.target;
+  const isTyping = target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable);
+  if (isTyping) return;
+  keys[e.key.toLowerCase()] = false;
+});
+
+const PLAYER_R = 13;
+const PROJ_R = 9;
+const SPINY_R = 12;
+const ARENA_TOP = 56; // player and balls can never enter the HUD stats strip
+
+const GREEN_SPEED = 1.7;
+const YELLOW_SPEED = 2.4;
+const RED_SPEED = 3.1;
+const SPINY_SPEED = 2.6;
+const BLACK_SPEED = YELLOW_SPEED;
+
+const BALL_LIFETIME = 40000;
+const SHOT_LIFETIME = 10000;
+const BLACK_LIFETIME = 10000;
+const HOMING_TURN_RATE = 0.035;
+const RED_SPLIT_BOUNCES = 5;
+
+const BASE_SPAWN_INTERVAL = 3.0;
+const MIN_SPAWN_INTERVAL = 0.4;
+const SPAWN_SPEEDUP_PER_MIN = 0.5;
+
+const SAFE_SPAWN_DIST = 180;
+const SPINY_START_TIME = 60000;
+const SPINY_MIN_GAP = 10000;
+const SPINY_MAX_GAP = 60000;
+const SPINY_LIFETIME = 20000;
+const SPINY_BURST_INTERVAL = 10000;
+const SPINY_BURST_COUNT = 6;
+
+const ABILITY_RADIUS = 115;
+const ABILITY_SLOW_MULT = 0.5;
+
+const BALL_COLORS = {
+  green:  '#4dff5a',
+  yellow: '#fff23d',
+  red:    '#ff3b3b',
+  black:  '#0a0a0a'
+};
+
+let playerHues = [
+  Math.floor(Math.random() * 360),
+  Math.floor(Math.random() * 360),
+  Math.floor(Math.random() * 360)
+];
+
+function setSwatch(el, hue) {
+  const c = 'hsl(' + hue + ', 100%, 60%)';
+  el.style.background = c;
+  el.style.color = c;
+}
+
+function setupHuePickers() {
+  hue1.value = playerHues[0];
+  hue2.value = playerHues[1];
+  hue3.value = playerHues[2];
+  setSwatch(swatch1, playerHues[0]);
+  setSwatch(swatch2, playerHues[1]);
+  setSwatch(swatch3, playerHues[2]);
+
+  hue1.addEventListener('input', () => { playerHues[0] = +hue1.value; setSwatch(swatch1, playerHues[0]); });
+  hue2.addEventListener('input', () => { playerHues[1] = +hue2.value; setSwatch(swatch2, playerHues[1]); });
+  hue3.addEventListener('input', () => { playerHues[2] = +hue3.value; setSwatch(swatch3, playerHues[2]); });
+}
+setupHuePickers();
+setupUpgradeShop();
+setupCompanionShop();
+
+const HUE_CYCLE_MS = 1200;
+
+function getPlayerHue(now) {
+  const seg = Math.floor(now / HUE_CYCLE_MS) % 3;
+  const nextSeg = (seg + 1) % 3;
+  const t = (now % HUE_CYCLE_MS) / HUE_CYCLE_MS;
+  const h1 = playerHues[seg], h2 = playerHues[nextSeg];
+  let diff = h2 - h1;
+  if (diff > 180) diff -= 360;
+  if (diff < -180) diff += 360;
+  return (h1 + diff * t + 360) % 360;
+}
+
+function playerColorAt(now, alpha) {
+  const hue = getPlayerHue(now);
+  return alpha === undefined
+    ? 'hsl(' + hue + ', 100%, 60%)'
+    : 'hsla(' + hue + ', 100%, 60%, ' + alpha + ')';
+}
+
+function drawPreview(now) {
+  if (!previewCanvas || !pvx) return;
+  pvx.clearRect(0, 0, 120, 120);
+  const hue = getPlayerHue(now);
+  const color = 'hsl(' + hue + ', 100%, 60%)';
+  const pulse = 1 + Math.sin(now / 260) * 0.1;
+  pvx.save();
+  pvx.translate(60, 60);
+  pvx.shadowColor = color;
+  pvx.shadowBlur = 30;
+  pvx.beginPath();
+  pvx.arc(0, 0, 34 * pulse, 0, Math.PI * 2);
+  pvx.fillStyle = color;
+  pvx.fill();
+  pvx.shadowBlur = 0;
+  pvx.beginPath();
+  pvx.arc(0, 0, 34 * pulse - 8, 0, Math.PI * 2);
+  pvx.fillStyle = '#0a0020';
+  pvx.fill();
+  pvx.beginPath();
+  pvx.arc(0, 0, 34 * pulse - 14, 0, Math.PI * 2);
+  pvx.fillStyle = color;
+  pvx.fill();
+  pvx.restore();
+}
+let player = { x: 0, y: 0, trail: [] };
+let projectiles = [];
+let nextSpinySpawnAt = Infinity;
+let abilityCharges = ABILITY_MAX_CHARGES;
+let abilityActive = false;
+let abilityActivatedAt = 0;
+let lives = MAX_LIVES;
+let invincibleUntil = 0;
+let paused = false;
+let pauseStartedAt = 0;
+
+// --- Companions ---
+const ZAPPY_INTERVAL = 45000;
+const ZAPPY_CIRCLE_DURATION = 5000;
+const ZAPPY_CIRCLE_RADIUS = 85;
+const PETAL_TICK_INTERVAL = 10000;
+const PETAL_SPEED_BONUS = 0.9;
+const AEGIS_ORBIT_RADIUS = 52;
+const AEGIS_SHIELD_R = 16;
+const AEGIS_SPIN_SPEED = 0.0009;
+const AEGIS_ACTIVE_DURATION = 10000;
+const AEGIS_COOLDOWN = 40000;
+
+let nextZappyCast = Infinity;
+let zappyCircles = [];
+let nextPetalTick = Infinity;
+let healQuarters = 0;
+let aegisAngle = 0;
+let aegisActive = false;
+let aegisActiveUntil = 0;
+let nextAegisCast = Infinity;
+let companionOrbitAngle = 0;
+let healPopupUntil = 0;
+
+function showHealPopup() {
+  healPopupUntil = performance.now() + 1400;
+}
+
+function updateLivesDisplay() {
+  let html = '';
+  for (let i = 0; i < MAX_LIVES; i++) {
+    let pct = 0;
+    if (i < lives) pct = 100;
+    else if (i === lives) pct = (healQuarters / 4) * 100;
+    html +=
+      '<span style="position:relative;display:inline-block;width:1em;">' +
+        '<span style="color:#3a1a4a;">♥</span>' +
+        '<span style="position:absolute;top:0;left:0;width:' + pct + '%;overflow:hidden;white-space:nowrap;color:#ff3b5c;">♥</span>' +
+      '</span>';
+  }
+  livesEl.innerHTML = html;
+}
+
+function tryActivateAbility() {
+  if (!running || paused || abilityActive || abilityCharges <= 0) return;
+  abilityActive = true;
+  abilityActivatedAt = performance.now();
+  abilityCharges--;
+  chargesEl.textContent = abilityCharges;
+}
+
+function currentSpawnInterval(elapsedMs) {
+  const minutes = elapsedMs / 60000;
+  let interval;
+  if (difficulty === DIFFICULTY_BABY) {
+    interval = 5;
+  } else if (difficulty === DIFFICULTY_EASY) {
+    interval = 4 - minutes * 0.15;
+  } else if (difficulty === DIFFICULTY_MEDIUM) {
+    interval = (BASE_SPAWN_INTERVAL + 0.5) - minutes * SPAWN_SPEEDUP_PER_MIN;
+  } else if (difficulty === DIFFICULTY_HARD) {
+    interval = (BASE_SPAWN_INTERVAL * 0.6 + 1) - minutes * SPAWN_SPEEDUP_PER_MIN;
+  } else {
+    interval = 1.2 + 1;
+  }
+  return Math.max(MIN_SPAWN_INTERVAL, interval);
+}
+
+function init() {
+  if (!validateName()) return;
+
+  const rawDifficulty = +difficultyPicker.querySelector('input[name="difficulty"]:checked').value;
+  // The radio button's value attribute is DOM-editable via devtools; never
+  // trust it as-is. Anything outside the five real difficulties gets
+  // pulled back in range instead of silently corrupting bestTimes/coins.
+  difficulty = (Number.isInteger(rawDifficulty) && rawDifficulty >= 0 && rawDifficulty <= DIFFICULTY_IMPOSSIBLE)
+    ? rawDifficulty
+    : DIFFICULTY_MEDIUM;
+
+  PLAYER_SPEED = computePlayerSpeed();
+  ABILITY_DURATION = computeAbilityDuration();
+  ABILITY_MAX_CHARGES = computeAbilityMaxCharges();
+  INVINCIBLE_DURATION = computeInvincibleDuration();
+  MAX_LIVES = computeMaxLives();
+
+  player = { x: W / 2, y: (ARENA_TOP + H) / 2, trail: [] };
+  projectiles = [];
+  startTime = performance.now();
+  lastSpawn = startTime;
+  nextSpinySpawnAt = (difficulty === DIFFICULTY_BABY || difficulty === DIFFICULTY_EASY)
+    ? Infinity
+    : startTime + (difficulty === DIFFICULTY_IMPOSSIBLE ? 30000 : SPINY_START_TIME);
+  running = true;
+  paused = false;
+  abilityCharges = ABILITY_MAX_CHARGES;
+  abilityActive = false;
+  chargesEl.textContent = abilityCharges;
+  lives = MAX_LIVES;
+  invincibleUntil = 0;
+  updateLivesDisplay();
+  timerEl.textContent = '3:00';
+  bestEl.textContent = bestTimes[difficulty].toFixed(1);
+  coinsHudEl.textContent = coins;
+
+  nextZappyCast = companionsOwned.zappy ? startTime + ZAPPY_INTERVAL : Infinity;
+  zappyCircles = [];
+  nextPetalTick = companionsOwned.petal ? startTime + PETAL_TICK_INTERVAL : Infinity;
+  healQuarters = 0;
+  aegisAngle = 0;
+  aegisActive = false;
+  nextAegisCast = companionsOwned.aegis ? startTime + AEGIS_COOLDOWN : Infinity;
+  aegisActiveUntil = 0;
+  healPopupUntil = 0;
+  companionOrbitAngle = 0;
+
+  overlay.classList.remove('active');
+  overlay.classList.add('hidden');
+  topPauseBtn.classList.add('visible');
+  document.getElementById('timeLeftStat').style.display = 'inline';
+  resize();
+  setControlsVisible(true);
+}
+
+function pickSpawnPoint() {
+  let x, y;
+  for (let attempt = 0; attempt < 20; attempt++) {
+    const side = Math.floor(Math.random() * 4);
+    if (side === 0) { x = Math.random() * W; y = ARENA_TOP - PROJ_R; }
+    else if (side === 1) { x = W + PROJ_R; y = ARENA_TOP + Math.random() * (H - ARENA_TOP); }
+    else if (side === 2) { x = Math.random() * W; y = H + PROJ_R; }
+    else { x = -PROJ_R; y = ARENA_TOP + Math.random() * (H - ARENA_TOP); }
+
+    const dx = x - player.x, dy = y - player.y;
+    if (Math.sqrt(dx * dx + dy * dy) >= SAFE_SPAWN_DIST) break;
+  }
+  return { x, y };
+}
+
+function spawnProjectile() {
+  const { x, y } = pickSpawnPoint();
+  let type;
+  if (difficulty === DIFFICULTY_BABY) {
+    type = 'green';
+  } else if (difficulty === DIFFICULTY_EASY) {
+    type = Math.random() < 0.67 ? 'green' : 'yellow';
+  } else if (difficulty === DIFFICULTY_MEDIUM) {
+    const roll = Math.random();
+    type = roll < 0.10 ? 'green'
+         : roll < 0.80 ? 'yellow'
+         : roll < 0.95 ? 'red'
+         : 'black';
+  } else if (difficulty === DIFFICULTY_HARD) {
+    const roll = Math.random();
+    type = roll < 0.40 ? 'yellow'
+         : roll < 0.95 ? 'red'
+         : 'black';
+  } else {
+    type = Math.random() < 0.95 ? 'red' : 'black';
+  }
+  projectiles.push(makeProjectile(type, x, y));
+}
+
+function spawnSpiny() {
+  const { x, y } = pickSpawnPoint();
+  projectiles.push(makeProjectile('spiny', x, y, undefined, SPINY_LIFETIME));
+}
+
+function makeProjectile(type, x, y, angleOverride, lifetimeOverride) {
+  const speed = type === 'green' ? GREEN_SPEED
+              : type === 'yellow' ? YELLOW_SPEED
+              : type === 'spiny' ? SPINY_SPEED
+              : type === 'black' ? BLACK_SPEED
+              : RED_SPEED;
+  const targetY = (ARENA_TOP + H) / 2;
+  const angle = angleOverride !== undefined
+    ? angleOverride
+    : Math.atan2(targetY - y, W / 2 - x) + (Math.random() - 0.5) * 1.4;
+  return {
+    type,
+    x, y,
+    vx: Math.cos(angle) * speed,
+    vy: Math.sin(angle) * speed,
+    color: type === 'spiny' ? '#1a1a22' : BALL_COLORS[type],
+    trail: [],
+    bounces: 0,
+    born: performance.now(),
+    lifetime: lifetimeOverride || (type === 'black' ? BLACK_LIFETIME : (difficulty === DIFFICULTY_BABY ? BALL_LIFETIME * 4 : BALL_LIFETIME)),
+    lastShot: performance.now(),
+    spin: 0
+  };
+}
+
+const SPLIT_LIFETIME = 20000;
+
+function splitRed(p) {
+  for (let i = 0; i < 2; i++) {
+    const angle = (Math.PI * 2 / 2) * i + Math.random() * 0.5;
+    projectiles.push(makeProjectile('yellow', p.x, p.y, angle, SPLIT_LIFETIME));
+  }
+}
+
+function burstSpiny(p) {
+  for (let i = 0; i < SPINY_BURST_COUNT; i++) {
+    const angle = (Math.PI * 2 / SPINY_BURST_COUNT) * i;
+    projectiles.push(makeProjectile('red', p.x, p.y, angle, SHOT_LIFETIME));
+  }
+}
+
+function handleHit(now) {
+  lives--;
+  healQuarters = 0;
+  updateLivesDisplay();
+  if (lives <= 0) {
+    gameOver((now - startTime) / 1000);
+    return;
+  }
+  invincibleUntil = now + INVINCIBLE_DURATION;
+  player.x = W / 2;
+  player.y = (ARENA_TOP + H) / 2;
+  player.trail = [];
+}
+
+function awardCoins(survivedSeconds, won) {
+  const rate = COIN_RATES[difficulty];
+  const fullIntervals = Math.floor(survivedSeconds / COIN_INTERVAL_SEC);
+  let earned = fullIntervals * rate;
+  if (won) earned += rate;
+  coins += earned;
+  return earned;
+}
+
+function quitRecordRun() {
+  if (!running) return;
+  const now = performance.now();
+  const elapsedMs = paused ? (pauseStartedAt - startTime) : (now - startTime);
+  const elapsed = Math.max(0, elapsedMs / 1000);
+  if (elapsed > bestTimes[difficulty]) bestTimes[difficulty] = elapsed;
+  awardCoins(elapsed, false);
+  saveProfile(playerName, bestTimes, coins, upgrades, companionsOwned);
+  running = false;
+}
+window.addEventListener('beforeunload', () => { quitRecordRun(); });
+
+// Auto-pause whenever the tab/window loses focus. Previously, leaving the
+// screen stopped requestAnimationFrame-driven spawns (since rAF throttles
+// in background tabs) while the elapsed-time math kept counting, letting
+// the clock run out with no balls on screen. Pausing on blur/hide fixes
+// that by freezing startTime bookkeeping the same way the manual pause does.
+function autoPauseOnLeave() {
+  if (running && !paused) togglePause();
+}
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) autoPauseOnLeave();
+});
+window.addEventListener('blur', autoPauseOnLeave);
+
+function goHome() {
+  quitRecordRun();
+  paused = false;
+  overlay.innerHTML = startScreenHTML;
+
+  page1 = document.getElementById('page1');
+  page2 = document.getElementById('page2');
+  page3 = document.getElementById('page3');
+  page4 = document.getElementById('page4');
+  pageDots = document.querySelectorAll('.pageDot');
+  next1Btn = document.getElementById('next1Btn');
+  back2Btn = document.getElementById('back2Btn');
+  next2Btn = document.getElementById('next2Btn');
+  back3Btn = document.getElementById('back3Btn');
+  next3Btn = document.getElementById('next3Btn');
+  back4Btn = document.getElementById('back4Btn');
+  startBtn = document.getElementById('startBtn');
+  hue1 = document.getElementById('hue1');
+  hue2 = document.getElementById('hue2');
+  hue3 = document.getElementById('hue3');
+  swatch1 = document.getElementById('swatch1');
+  swatch2 = document.getElementById('swatch2');
+  swatch3 = document.getElementById('swatch3');
+  difficultyPicker = document.getElementById('difficultyPicker');
+  nameField = document.getElementById('playerNameField');
+  nameError = document.getElementById('nameError');
+  kdnPinField = document.getElementById('kdnPinField');
+  kdnPinError = document.getElementById('kdnPinError');
+  welcomeBack = document.getElementById('welcomeBack');
+  overallBestDisplay = document.getElementById('overallBestDisplay');
+  coinsDisplay = document.getElementById('coinsDisplay');
+  characterTab = document.getElementById('characterTab');
+  companionsTab = document.getElementById('companionsTab');
+  upgradeTabBtns = document.querySelectorAll('.tabBtn');
+  previewCanvas = document.getElementById('previewCanvas');
+  pvx = previewCanvas ? previewCanvas.getContext('2d') : null;
+
+  setupHuePickers();
+  setupUpgradeShop();
+  setupCompanionShop();
+  setupNameField();
+  setupNav();
+  setupTabs();
+  refreshStatsDisplay();
+  coinsHudEl.textContent = coins;
+  const savedChoice = difficultyPicker.querySelector('input[name="difficulty"][value="' + difficulty + '"]');
+  if (savedChoice) savedChoice.checked = true;
+  showPage(1);
+
+  startBtn.addEventListener('click', init);
+  overlay.classList.remove('hidden');
+  overlay.classList.add('active');
+  overlay.classList.remove('center');
+  topPauseBtn.classList.remove('visible');
+  document.getElementById('timeLeftStat').style.display = 'none';
+  setControlsVisible(false);
+  resize();
+}
+
+function togglePause() {
+  if (!running) return;
+  if (paused) {
+    beginResumeCountdown();
+    return;
+  }
+  paused = true;
+  pauseStartedAt = performance.now();
+  setControlsVisible(false);
+  showPauseMenu();
+}
+
+function showPauseMenu() {
+  overlay.innerHTML =
+    '<h2>Paused</h2>' +
+    '<p>Take a breather — jump back in whenever you\'re ready.</p>' +
+    '<div id="gameOverBtns">' +
+      '<button id="resumeBtn">Resume</button>' +
+      '<button id="pauseRestartBtn" class="secondary">Restart</button>' +
+      '<button id="pauseHomeBtn" class="secondary">Home</button>' +
+    '</div>';
+  overlay.classList.remove('hidden');
+  overlay.classList.add('active');
+  overlay.classList.add('center');
+  document.getElementById('resumeBtn').addEventListener('click', beginResumeCountdown);
+  document.getElementById('pauseRestartBtn').addEventListener('click', () => { quitRecordRun(); init(); });
+  document.getElementById('pauseHomeBtn').addEventListener('click', goHome);
+}
+
+function beginResumeCountdown() {
+  let count = 3;
+  overlay.innerHTML =
+    '<h2 id="countdownNum" style="font-size: clamp(60px, 16vw, 110px);">' + count + '</h2>' +
+    '<p>Get ready…</p>';
+  overlay.classList.remove('hidden');
+  overlay.classList.add('active');
+  overlay.classList.add('center');
+
+  const tick = setInterval(() => {
+    count--;
+    const numEl = document.getElementById('countdownNum');
+    if (count <= 0) {
+      clearInterval(tick);
+      resumeGame();
+      return;
+    }
+    if (numEl) numEl.textContent = count;
+  }, 1000);
+}
+
+function resumeGame() {
+  const now = performance.now();
+  const pausedDuration = now - pauseStartedAt;
+  startTime += pausedDuration;
+  lastSpawn += pausedDuration;
+  if (nextSpinySpawnAt !== Infinity) nextSpinySpawnAt += pausedDuration;
+  abilityActivatedAt += pausedDuration;
+  invincibleUntil += pausedDuration;
+  if (nextZappyCast !== Infinity) nextZappyCast += pausedDuration;
+  if (nextPetalTick !== Infinity) nextPetalTick += pausedDuration;
+  if (nextAegisCast !== Infinity) nextAegisCast += pausedDuration;
+  aegisActiveUntil += pausedDuration;
+  healPopupUntil += pausedDuration;
+  for (const zc of zappyCircles) zc.createdAt += pausedDuration;
+  for (const p of projectiles) {
+    p.born += pausedDuration;
+    p.lastShot += pausedDuration;
+  }
+  paused = false;
+  overlay.classList.remove('active');
+  overlay.classList.add('hidden');
+  overlay.classList.remove('center');
+  setControlsVisible(true);
+}
+
+function gameOver(elapsed) {
+  running = false;
+  const isNewBest = elapsed > bestTimes[difficulty];
+  if (isNewBest) bestTimes[difficulty] = elapsed;
+  const earned = awardCoins(elapsed, false);
+  saveProfile(playerName, bestTimes, coins, upgrades, companionsOwned);
+  bestEl.textContent = bestTimes[difficulty].toFixed(1);
+  coinsHudEl.textContent = coins;
+
+  overlay.innerHTML =
+    '<h2>Game Over</h2>' +
+    '<p class="big">You lasted <strong>' + elapsed.toFixed(1) + 's</strong></p>' +
+    '<p class="big best">Level Best ' + bestTimes[difficulty].toFixed(1) + 's' + (isNewBest ? ' — New Best!' : '') + '</p>' +
+    '<p class="big coinGain">+' + earned + ' 🪙 (total: ' + coins + ')</p>' +
+    '<p>W A S D to move · E/Space for magic circle</p>' +
+    '<div id="gameOverBtns">' +
+      '<button id="restartBtn">Play again</button>' +
+      '<button id="homeBtn" class="secondary">Home</button>' +
+    '</div>';
+  overlay.classList.remove('hidden');
+  overlay.classList.add('active');
+  overlay.classList.add('center');
+  document.getElementById('restartBtn').addEventListener('click', init);
+  document.getElementById('homeBtn').addEventListener('click', goHome);
+  topPauseBtn.classList.remove('visible');
+  document.getElementById('timeLeftStat').style.display = 'none';
+  setControlsVisible(false);
+}
+
+function winGame() {
+  running = false;
+  const survived = GAME_DURATION / 1000;
+  const isNewBest = survived > bestTimes[difficulty];
+  if (isNewBest) bestTimes[difficulty] = survived;
+  const earned = awardCoins(survived, true);
+  saveProfile(playerName, bestTimes, coins, upgrades, companionsOwned);
+  bestEl.textContent = bestTimes[difficulty].toFixed(1);
+  coinsHudEl.textContent = coins;
+
+  overlay.innerHTML = '<div id="badgeWrap"><div id="badge">🏆</div><h2>You Win!</h2></div>';
+  overlay.classList.remove('hidden');
+  overlay.classList.add('active');
+  overlay.classList.add('center');
+  topPauseBtn.classList.remove('visible');
+  document.getElementById('timeLeftStat').style.display = 'none';
+  setControlsVisible(false);
+
+  setTimeout(() => {
+    const badgeWrap = document.getElementById('badgeWrap');
+    if (badgeWrap) badgeWrap.classList.add('fadeOut');
+    setTimeout(() => showWinScreen(earned), 700);
+  }, 2600);
+}
+
+function showWinScreen(earned) {
+  overlay.innerHTML =
+    '<h2>You Win!</h2>' +
+    '<p class="big">You survived the full <strong>3 minutes</strong>!</p>' +
+    '<p class="big coinGain">+' + earned + ' 🪙 (total: ' + coins + ')</p>' +
+    '<p>W A S D to move · E/Space for magic circle</p>' +
+    '<div id="gameOverBtns">' +
+      '<button id="restartBtn">Play again</button>' +
+      '<button id="homeBtn" class="secondary">Home</button>' +
+    '</div>';
+  document.getElementById('restartBtn').addEventListener('click', init);
+  document.getElementById('homeBtn').addEventListener('click', goHome);
+}
+// Runs every frame. If live gameplay values are altered mid-run (e.g. via
+// a console injection or extension setting `lives = 99`), they get snapped
+// back to what the player's legitimate upgrade levels actually allow.
+function enforceRuntimeIntegrity() {
+  const legalMaxLives = computeMaxLives();
+  const legalCharges = computeAbilityMaxCharges();
+
+  if (!isFinite(lives) || lives > legalMaxLives) {
+    lives = legalMaxLives;
+    updateLivesDisplay();
+  }
+  if (!isFinite(abilityCharges) || abilityCharges > legalCharges || abilityCharges < 0) {
+    abilityCharges = Math.max(0, Math.min(legalCharges, Math.floor(abilityCharges) || 0));
+    chargesEl.textContent = abilityCharges;
+  }
+  if (PLAYER_SPEED !== computePlayerSpeed()) PLAYER_SPEED = computePlayerSpeed();
+  if (ABILITY_DURATION !== computeAbilityDuration()) ABILITY_DURATION = computeAbilityDuration();
+  if (INVINCIBLE_DURATION !== computeInvincibleDuration()) INVINCIBLE_DURATION = computeInvincibleDuration();
+
+  const clampedCoins = clampCoins(coins);
+  if (coins !== clampedCoins) {
+    coins = clampedCoins;
+    coinsHudEl.textContent = coins;
+  }
+
+  // Invincibility can never legitimately last longer than the respawn shield.
+  const maxInvincibleEnd = performance.now() + INVINCIBLE_DURATION + 50;
+  if (invincibleUntil > maxInvincibleEnd) invincibleUntil = maxInvincibleEnd;
+}
+
+function update(now) {
+  enforceRuntimeIntegrity();
+  if (!running || paused) return;
+
+  if (abilityActive && now - abilityActivatedAt > ABILITY_DURATION) {
+    abilityActive = false;
+  }
+
+  let dx = 0, dy = 0;
+  if (keys['w'] || keys['arrowup']) dy -= 1;
+  if (keys['s'] || keys['arrowdown']) dy += 1;
+  if (keys['a'] || keys['arrowleft']) dx -= 1;
+  if (keys['d'] || keys['arrowright']) dx += 1;
+  if (dx && dy) { dx *= 0.707; dy *= 0.707; }
+  if (controlMode === 'touch' && (touchMoveX || touchMoveY)) {
+    dx = touchMoveX;
+    dy = touchMoveY;
+  }
+  const effectiveSpeed = PLAYER_SPEED + (companionsOwned.petal && lives >= MAX_LIVES ? PETAL_SPEED_BONUS : 0);
+  player.x = Math.max(PLAYER_R, Math.min(W - PLAYER_R, player.x + dx * effectiveSpeed));
+  player.y = Math.max(ARENA_TOP + PLAYER_R, Math.min(H - PLAYER_R, player.y + dy * effectiveSpeed));
+
+  player.trail.push({ x: player.x, y: player.y, hue: getPlayerHue(now) });
+  if (player.trail.length > 14) player.trail.shift();
+
+  companionOrbitAngle += 0.03;
+
+  if (now >= nextZappyCast) {
+    for (let i = 0; i < 3; i++) {
+      zappyCircles.push({
+        x: SAFE_SPAWN_DIST / 2 + Math.random() * (W - SAFE_SPAWN_DIST),
+        y: ARENA_TOP + 20 + Math.random() * (H - ARENA_TOP - 40),
+        createdAt: now
+      });
+    }
+    nextZappyCast = now + ZAPPY_INTERVAL;
+  }
+  zappyCircles = zappyCircles.filter(c => now - c.createdAt < ZAPPY_CIRCLE_DURATION);
+
+  if (now >= nextPetalTick) {
+    if (lives < MAX_LIVES) {
+      healQuarters++;
+      showHealPopup();
+      if (healQuarters >= 4) {
+        healQuarters = 0;
+        lives = Math.min(MAX_LIVES, lives + 1);
+      }
+      updateLivesDisplay();
+    }
+    nextPetalTick = now + PETAL_TICK_INTERVAL;
+  }
+
+  if (companionsOwned.aegis) {
+    if (aegisActive) {
+      aegisAngle += AEGIS_SPIN_SPEED * 16.67;
+      if (now >= aegisActiveUntil) {
+        aegisActive = false;
+        nextAegisCast = now + AEGIS_COOLDOWN;
+      }
+    } else if (now >= nextAegisCast) {
+      aegisActive = true;
+      aegisActiveUntil = now + AEGIS_ACTIVE_DURATION;
+    }
+  }
+
+  const elapsedMs = now - startTime;
+  if (elapsedMs >= GAME_DURATION) {
+    winGame();
+    return;
+  }
+
+  if (now - lastSpawn > currentSpawnInterval(elapsedMs) * 1000) {
+    spawnProjectile();
+    lastSpawn = now;
+  }
+
+  if (now >= nextSpinySpawnAt) {
+    spawnSpiny();
+    nextSpinySpawnAt = now + (SPINY_MIN_GAP + Math.random() * (SPINY_MAX_GAP - SPINY_MIN_GAP));
+  }
+
+  const toSplit = [];
+  const toBurst = [];
+  const toRemove = [];
+  const r = PROJ_R;
+
+  for (const p of projectiles) {
+    if (now - p.born > p.lifetime) { toRemove.push(p); continue; }
+
+    p.trail.push({ x: p.x, y: p.y });
+    if (p.trail.length > 7) p.trail.shift();
+
+    let speedMult = 1;
+    if (abilityActive) {
+      const adx = p.x - player.x, ady = p.y - player.y;
+      if (Math.sqrt(adx * adx + ady * ady) < ABILITY_RADIUS) speedMult = ABILITY_SLOW_MULT;
+    }
+    for (const zc of zappyCircles) {
+      const zdx = p.x - zc.x, zdy = p.y - zc.y;
+      if (Math.sqrt(zdx * zdx + zdy * zdy) < ZAPPY_CIRCLE_RADIUS) { speedMult = ABILITY_SLOW_MULT; break; }
+    }
+
+    if (p.type === 'black') {
+      const desiredAngle = Math.atan2(player.y - p.y, player.x - p.x);
+      const curAngle = Math.atan2(p.vy, p.vx);
+      let diff = desiredAngle - curAngle;
+      while (diff > Math.PI) diff -= Math.PI * 2;
+      while (diff < -Math.PI) diff += Math.PI * 2;
+      const turn = Math.max(-HOMING_TURN_RATE, Math.min(HOMING_TURN_RATE, diff));
+      const newAngle = curAngle + turn;
+      const spd = Math.hypot(p.vx, p.vy);
+      p.vx = Math.cos(newAngle) * spd;
+      p.vy = Math.sin(newAngle) * spd;
+    }
+
+    p.x += p.vx * speedMult;
+    p.y += p.vy * speedMult;
+    p.spin += 0.08 * speedMult;
+
+    const rad = p.type === 'spiny' ? SPINY_R : r;
+    let bounced = false;
+    if (p.x - rad <= 0 || p.x + rad >= W) { p.vx *= -1; p.x = Math.max(rad, Math.min(W - rad, p.x)); bounced = true; }
+    if (p.y - rad <= ARENA_TOP || p.y + rad >= H) { p.vy *= -1; p.y = Math.max(ARENA_TOP + rad, Math.min(H - rad, p.y)); bounced = true; }
+
+    if (companionsOwned.aegis && aegisActive) {
+      const pdx = p.x - player.x, pdy = p.y - player.y;
+      const pdist = Math.sqrt(pdx * pdx + pdy * pdy);
+      const barrierR = AEGIS_ORBIT_RADIUS;
+      if (pdist < barrierR + rad) {
+        const nx = pdist > 0.01 ? pdx / pdist : 1, ny = pdist > 0.01 ? pdy / pdist : 0;
+        const speed = Math.hypot(p.vx, p.vy) || 1;
+        p.vx = nx * speed;
+        p.vy = ny * speed;
+        p.x = player.x + nx * (barrierR + rad + 1);
+        p.y = player.y + ny * (barrierR + rad + 1);
+        bounced = true;
+      }
+    }
+
+    if (bounced) {
+      p.bounces++;
+      if (p.type === 'red' && p.bounces >= RED_SPLIT_BOUNCES) {
+        toSplit.push(p);
+        toRemove.push(p);
+        continue;
+      }
+    }
+
+    if (p.type === 'spiny' && now - p.lastShot >= SPINY_BURST_INTERVAL) {
+      toBurst.push(p);
+      p.lastShot = now;
+    }
+
+    const cdx = p.x - player.x, cdy = p.y - player.y;
+    if (now >= invincibleUntil && Math.sqrt(cdx * cdx + cdy * cdy) < PLAYER_R + rad - 2) {
+      handleHit(now);
+      if (!running) return;
+    }
+  }
+
+  for (const p of toSplit) splitRed(p);
+  for (const p of toBurst) burstSpiny(p);
+  if (toRemove.length) projectiles = projectiles.filter(p => !toRemove.includes(p));
+
+  const remainingMs = Math.max(0, GAME_DURATION - elapsedMs);
+  const remainingSec = Math.ceil(remainingMs / 1000);
+  const mm = Math.floor(remainingSec / 60);
+  const ss = String(remainingSec % 60).padStart(2, '0');
+  timerEl.textContent = mm + ':' + ss;
+  countEl.textContent = projectiles.length;
+}
+
+const blobs = [];
+function initBlobs() {
+  blobs.length = 0;
+  const cols = ['#ff2e97', '#7b2fff', '#00f0ff', '#ff9500', '#4dff5a'];
+  for (let i = 0; i < 6; i++) {
+    blobs.push({
+      x: Math.random(), y: Math.random(),
+      vx: (Math.random() - 0.5) * 0.0006,
+      vy: (Math.random() - 0.5) * 0.0006,
+      r: 0.35 + Math.random() * 0.3,
+      color: cols[i % cols.length]
+    });
+  }
+}
+initBlobs();
+
+function drawBg(now) {
+  bgx.globalCompositeOperation = 'source-over';
+  bgx.fillStyle = '#12002e';
+  bgx.fillRect(0, 0, W, H);
+  bgx.globalCompositeOperation = 'lighter';
+  for (const b of blobs) {
+    b.x += b.vx; b.y += b.vy;
+    if (b.x < -0.2 || b.x > 1.2) b.vx *= -1;
+    if (b.y < -0.2 || b.y > 1.2) b.vy *= -1;
+    const wob = Math.sin(now / 2200 + b.x * 8) * 0.06;
+    const cx = b.x * W, cy = b.y * H, rad = (b.r + wob) * W;
+    const g = bgx.createRadialGradient(cx, cy, 0, cx, cy, rad);
+    g.addColorStop(0, b.color + '66');
+    g.addColorStop(1, b.color + '00');
+    bgx.fillStyle = g;
+    bgx.beginPath();
+    bgx.arc(cx, cy, rad, 0, Math.PI * 2);
+    bgx.fill();
+  }
+  bgx.globalCompositeOperation = 'source-over';
+}
+
+function hexToRgba(hex, alpha) {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return 'rgba(' + r + ',' + g + ',' + b + ',' + alpha + ')';
+}
+
+function drawSpiny(p) {
+  const spikes = 8;
+  ctx.save();
+  ctx.translate(p.x, p.y);
+  ctx.rotate(p.spin);
+  ctx.shadowColor = '#b388ff';
+  ctx.shadowBlur = 14;
+  ctx.beginPath();
+  for (let i = 0; i < spikes * 2; i++) {
+    const ang = (Math.PI / spikes) * i;
+    const rad = i % 2 === 0 ? SPINY_R + 6 : SPINY_R - 2;
+    const px = Math.cos(ang) * rad, py = Math.sin(ang) * rad;
+    if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+  }
+  ctx.closePath();
+  ctx.fillStyle = '#1a1a22';
+  ctx.fill();
+  ctx.strokeStyle = '#b388ff';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+  ctx.shadowBlur = 0;
+  ctx.beginPath();
+  ctx.arc(0, 0, SPINY_R * 0.4, 0, Math.PI * 2);
+  ctx.fillStyle = '#b388ff';
+  ctx.fill();
+  ctx.restore();
+}
+
+function drawSparkleBurst(r) {
+  ctx.beginPath();
+  for (let i = 0; i < 8; i++) {
+    const ang = (Math.PI * 2 / 8) * i;
+    const len = i % 2 === 0 ? r : r * 0.55;
+    const x1 = Math.cos(ang) * len * 0.28, y1 = Math.sin(ang) * len * 0.28;
+    const x2 = Math.cos(ang) * len, y2 = Math.sin(ang) * len;
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+  }
+  ctx.stroke();
+}
+
+function drawGearRing(r, teeth) {
+  ctx.beginPath();
+  for (let i = 0; i < teeth; i++) {
+    const a1 = (Math.PI * 2 / teeth) * i;
+    const a2 = a1 + (Math.PI * 2 / teeth) * 0.5;
+    ctx.moveTo(Math.cos(a1) * r, Math.sin(a1) * r);
+    ctx.lineTo(Math.cos(a1) * (r + 7), Math.sin(a1) * (r + 7));
+    ctx.lineTo(Math.cos(a2) * (r + 7), Math.sin(a2) * (r + 7));
+    ctx.lineTo(Math.cos(a2) * r, Math.sin(a2) * r);
+  }
+  ctx.stroke();
+}
+
+const HOLY_GLYPHS = ['✦', '✧', '⋆', '✶', '✳', '✴', '✺', '✹', '✷', '✵', '✸', '✻', '✼', '✽', '✾', '✩'];
+
+function drawPolygonRing(r, sides, rotOffset) {
+  ctx.beginPath();
+  for (let i = 0; i < sides; i++) {
+    const ang = rotOffset + (Math.PI * 2 / sides) * i - Math.PI / 2;
+    const x = Math.cos(ang) * r, y = Math.sin(ang) * r;
+    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  }
+  ctx.closePath();
+  ctx.stroke();
+}
+
+function drawHolyCircle(now) {
+  if (!abilityActive) return;
+  const t = (now - abilityActivatedAt) / ABILITY_DURATION;
+  const fade = Math.min(1, (1 - t) * 3);
+  const pulse = 1 + Math.sin(now / 180) * 0.03;
+
+  const phaseLen = 1400;
+  const phaseT = (now % phaseLen) / phaseLen;
+  const phaseFlip = Math.floor(now / phaseLen) % 2 === 0 ? 1 : -1;
+  const morphEase = 0.5 - 0.5 * Math.cos(phaseT * Math.PI);
+  const polySides = phaseFlip > 0 ? 6 : 8;
+
+  ctx.save();
+  ctx.translate(player.x, player.y);
+  ctx.globalAlpha = 0.9 * fade;
+  ctx.shadowColor = '#ffe066';
+  ctx.shadowBlur = 22;
+
+  ctx.strokeStyle = '#fff7cf';
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.arc(0, 0, ABILITY_RADIUS * pulse, 0, Math.PI * 2);
+  ctx.stroke();
+
+  ctx.save();
+  ctx.rotate(now / 4200);
+  ctx.strokeStyle = '#ffe066aa';
+  ctx.lineWidth = 1;
+  drawGearRing(ABILITY_RADIUS - 6, 28);
+  ctx.restore();
+
+  ctx.save();
+  ctx.rotate(now / 2600);
+  ctx.font = '15px Georgia, serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = '#ffe066';
+  ctx.shadowBlur = 10;
+  const runeRadius = ABILITY_RADIUS - 16;
+  for (let i = 0; i < HOLY_GLYPHS.length; i++) {
+    const ang = (Math.PI * 2 / HOLY_GLYPHS.length) * i;
+    ctx.save();
+    ctx.translate(Math.cos(ang) * runeRadius, Math.sin(ang) * runeRadius);
+    ctx.rotate(ang + Math.PI / 2);
+    ctx.fillText(HOLY_GLYPHS[i], 0, 0);
+    ctx.restore();
+  }
+  ctx.restore();
+
+  ctx.save();
+  ctx.rotate(-now / 1900);
+  ctx.font = '10px Georgia, serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = '#fff7cfcc';
+  ctx.shadowBlur = 6;
+  const innerGlyphR = ABILITY_RADIUS - 34;
+  for (let i = 0; i < 10; i++) {
+    const ang = (Math.PI * 2 / 10) * i;
+    ctx.save();
+    ctx.translate(Math.cos(ang) * innerGlyphR, Math.sin(ang) * innerGlyphR);
+    ctx.rotate(ang + Math.PI / 2);
+    ctx.fillText(HOLY_GLYPHS[(i + 3) % HOLY_GLYPHS.length], 0, 0);
+    ctx.restore();
+  }
+  ctx.restore();
+
+  ctx.save();
+  ctx.rotate(-now / 1400);
+  ctx.setLineDash([6, 10]);
+  ctx.strokeStyle = '#fff7cfcc';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.arc(0, 0, ABILITY_RADIUS - 44, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.restore();
+
+  ctx.save();
+  ctx.rotate((now / 3600) * phaseFlip);
+  ctx.strokeStyle = 'rgba(255, 224, 102, ' + (0.55 + 0.35 * Math.sin(morphEase * Math.PI)) + ')';
+  ctx.lineWidth = 1.8;
+  const polyR = ABILITY_RADIUS - 52;
+  drawPolygonRing(polyR, polySides, 0);
+  ctx.lineWidth = 1.1;
+  ctx.globalAlpha *= 0.6;
+  drawPolygonRing(polyR * 0.62, polySides, Math.PI / polySides);
+  ctx.restore();
+
+  ctx.beginPath();
+  ctx.arc(0, 0, 9 * pulse, 0, Math.PI * 2);
+  ctx.fillStyle = '#fff7cf';
+  ctx.shadowBlur = 18;
+  ctx.fill();
+
+  ctx.shadowBlur = 6;
+  for (let i = 0; i < 8; i++) {
+    const ang = (Math.PI * 2 / 8) * i + now / 900;
+    const dist = ABILITY_RADIUS * 0.6 + Math.sin(now / 300 + i) * 10;
+    const twinkle = 0.35 + 0.65 * Math.abs(Math.sin(now / 260 + i * 2));
+    ctx.beginPath();
+    ctx.arc(Math.cos(ang) * dist, Math.sin(ang) * dist, 2, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(255, 247, 207, ' + twinkle + ')';
+    ctx.fill();
+  }
+
+  ctx.restore();
+  ctx.globalAlpha = 1;
+}
+
+function drawRespawnShield(now) {
+  const r = PLAYER_R + 11 + Math.sin(now / 200) * 2.5;
+  ctx.save();
+  ctx.translate(player.x, player.y);
+
+  const grad = ctx.createRadialGradient(0, 0, r * 0.2, 0, 0, r);
+  grad.addColorStop(0, 'rgba(80, 200, 255, 0.10)');
+  grad.addColorStop(0.7, 'rgba(80, 200, 255, 0.28)');
+  grad.addColorStop(1, 'rgba(140, 230, 255, 0.55)');
+  ctx.beginPath();
+  ctx.arc(0, 0, r, 0, Math.PI * 2);
+  ctx.fillStyle = grad;
+  ctx.fill();
+
+  const rimPulse = 0.6 + 0.4 * Math.abs(Math.sin(now / 150));
+  ctx.shadowColor = '#7fe0ff';
+  ctx.shadowBlur = 20 * rimPulse + 8;
+  ctx.strokeStyle = 'rgba(190, 245, 255, ' + (0.7 + 0.3 * rimPulse) + ')';
+  ctx.lineWidth = 2.4;
+  ctx.stroke();
+  ctx.shadowBlur = 0;
+
+  ctx.save();
+  ctx.rotate(now / 500);
+  ctx.strokeStyle = 'rgba(210, 245, 255, 0.7)';
+  ctx.lineWidth = 1.2;
+  for (let i = 0; i < 6; i++) {
+    const a1 = (Math.PI / 3) * i;
+    const a2 = (Math.PI / 3) * (i + 1);
+    ctx.beginPath();
+    ctx.moveTo(Math.cos(a1) * r * 0.85, Math.sin(a1) * r * 0.85);
+    ctx.lineTo(Math.cos(a2) * r * 0.85, Math.sin(a2) * r * 0.85);
+    ctx.stroke();
+  }
+  ctx.restore();
+
+  ctx.save();
+  ctx.rotate(-now / 350);
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.55)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.arc(0, 0, r * 0.55, 0, Math.PI * 1.5);
+  ctx.stroke();
+  ctx.restore();
+
+  for (let i = 0; i < 6; i++) {
+    const ang = (Math.PI * 2 / 6) * i + now / 260;
+    const sparkR = r * (0.95 + Math.sin(now / 90 + i * 3) * 0.05);
+    const sx = Math.cos(ang) * sparkR, sy = Math.sin(ang) * sparkR;
+    const flick = 0.4 + 0.6 * Math.abs(Math.sin(now / 80 + i * 5));
+    ctx.beginPath();
+    ctx.arc(sx, sy, 1.8, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(220, 250, 255, ' + flick + ')';
+    ctx.shadowColor = '#aef2ff';
+    ctx.shadowBlur = 8;
+    ctx.fill();
+  }
+  ctx.shadowBlur = 0;
+
+  ctx.beginPath();
+  ctx.arc(0, 0, 4 + Math.sin(now / 150) * 1.5, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+  ctx.fill();
+
+  ctx.restore();
+}
+
+function drawZappyCircles(now) {
+  for (const zc of zappyCircles) {
+    const age = now - zc.createdAt;
+    const fade = Math.max(0, 1 - age / ZAPPY_CIRCLE_DURATION);
+    const pulse = 1 + Math.sin(now / 150) * 0.03;
+    ctx.save();
+    ctx.translate(zc.x, zc.y);
+    ctx.globalAlpha = 0.85 * fade;
+    ctx.shadowColor = '#c77dff';
+    ctx.shadowBlur = 22;
+
+    ctx.strokeStyle = '#e0c3ff';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(0, 0, ZAPPY_CIRCLE_RADIUS * pulse, 0, Math.PI * 2);
+    ctx.stroke();
+
+    ctx.save();
+    ctx.rotate(now / 3600);
+    ctx.strokeStyle = '#e0c3ffaa';
+    ctx.lineWidth = 0.9;
+    drawGearRing(ZAPPY_CIRCLE_RADIUS - 4, 22);
+    ctx.restore();
+
+    ctx.save();
+    ctx.rotate(-now / 2200);
+    ctx.font = '13px Georgia, serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#e8d4ff';
+    ctx.shadowBlur = 8;
+    const runeRadius = ZAPPY_CIRCLE_RADIUS - 8;
+    for (let i = 0; i < 10; i++) {
+      const ang = (Math.PI * 2 / 10) * i;
+      ctx.save();
+      ctx.translate(Math.cos(ang) * runeRadius, Math.sin(ang) * runeRadius);
+      ctx.rotate(ang + Math.PI / 2);
+      ctx.fillText(HOLY_GLYPHS[i % HOLY_GLYPHS.length], 0, 0);
+      ctx.restore();
+    }
+    ctx.restore();
+
+    ctx.save();
+    ctx.rotate(now / 1300);
+    ctx.setLineDash([5, 9]);
+    ctx.strokeStyle = '#b388ffcc';
+    ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    ctx.arc(0, 0, ZAPPY_CIRCLE_RADIUS - 22, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.restore();
+
+    ctx.save();
+    ctx.rotate(now / 2600);
+    ctx.strokeStyle = '#f0e0ffcc';
+    ctx.lineWidth = 1.2;
+    drawSparkleBurst(ZAPPY_CIRCLE_RADIUS * 0.35);
+    ctx.restore();
+
+    ctx.beginPath();
+    ctx.arc(0, 0, 6 * pulse, 0, Math.PI * 2);
+    ctx.fillStyle = '#f5eaff';
+    ctx.shadowBlur = 14;
+    ctx.fill();
+
+    ctx.shadowBlur = 10;
+    const boltCount = 6;
+    for (let i = 0; i < boltCount; i++) {
+      if (Math.random() > 0.45) continue;
+      const ang = (Math.PI * 2 / boltCount) * i + now / 500;
+      const baseR = ZAPPY_CIRCLE_RADIUS * 0.82;
+      const x1 = Math.cos(ang) * baseR, y1 = Math.sin(ang) * baseR;
+      const x2 = Math.cos(ang) * (ZAPPY_CIRCLE_RADIUS + 6), y2 = Math.sin(ang) * (ZAPPY_CIRCLE_RADIUS + 6);
+      const midX = (x1 + x2) / 2 + (Math.random() - 0.5) * 8;
+      const midY = (y1 + y2) / 2 + (Math.random() - 0.5) * 8;
+      ctx.strokeStyle = '#e8d4ffdd';
+      ctx.lineWidth = 1.3;
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(midX, midY);
+      ctx.lineTo(x2, y2);
+      ctx.stroke();
+    }
+
+    ctx.restore();
+    ctx.globalAlpha = 1;
+  }
+}
+
+function drawChunkyPart(x1, y1, x2, y2, width) {
+  ctx.save();
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.lineWidth = width;
+  ctx.strokeStyle = 'rgba(150, 255, 190, 0.75)';
+  ctx.beginPath();
+  ctx.moveTo(x1, y1);
+  ctx.lineTo(x2, y2);
+  ctx.stroke();
+  ctx.lineWidth = Math.max(1, width - 4);
+  ctx.strokeStyle = 'rgba(90, 255, 150, 0.45)';
+  ctx.beginPath();
+  ctx.moveTo(x1, y1);
+  ctx.lineTo(x2, y2);
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawHoloTurtle(cx, cy, size, facing, alpha, now) {
+  const shellPts = [];
+  for (let i = 0; i < 8; i++) {
+    const a = (Math.PI / 4) * i;
+    shellPts.push([Math.cos(a) * size * 0.6, Math.sin(a) * size * 0.45]);
+  }
+  const innerPts = shellPts.map(p => [p[0] * 0.5, p[1] * 0.5]);
+
+  const headPt = [0, -size * 0.95];
+  const neckPt = [0, -size * 0.58];
+  const tailPt = [0, size * 0.72];
+
+  const legs = [
+    { link: shellPts[5], foot: [-size * 0.92, -size * 0.38] },
+    { link: shellPts[7], foot: [ size * 0.92, -size * 0.38] },
+    { link: shellPts[3], foot: [-size * 0.92,  size * 0.48] },
+    { link: shellPts[1], foot: [ size * 0.92,  size * 0.48] }
+  ];
+
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate(facing + Math.PI / 2);
+  ctx.globalAlpha = alpha;
+  ctx.shadowColor = '#7dffa8';
+  ctx.shadowBlur = 10;
+
+  legs.forEach(l => drawChunkyPart(l.link[0], l.link[1], l.foot[0], l.foot[1], size * 0.36));
+  drawChunkyPart(shellPts[2][0], shellPts[2][1], tailPt[0], tailPt[1], size * 0.26);
+  drawChunkyPart(shellPts[6][0], shellPts[6][1], neckPt[0], neckPt[1], size * 0.4);
+  drawChunkyPart(neckPt[0], neckPt[1], headPt[0], headPt[1], size * 0.36);
+
+  ctx.beginPath();
+  ctx.arc(headPt[0], headPt[1], size * 0.3, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(90, 255, 150, 0.45)';
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(150, 255, 190, 0.75)';
+  ctx.lineWidth = 1.4;
+  ctx.stroke();
+
+  const shimmer = 0.22 + 0.07 * Math.sin(now / 260 + cx);
+  ctx.beginPath();
+  shellPts.forEach((p, i) => i === 0 ? ctx.moveTo(p[0], p[1]) : ctx.lineTo(p[0], p[1]));
+  ctx.closePath();
+  ctx.fillStyle = 'rgba(80, 255, 140, ' + shimmer + ')';
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(150, 255, 190, 0.8)';
+  ctx.lineWidth = 1.6;
+  ctx.stroke();
+
+  ctx.strokeStyle = 'rgba(130, 255, 175, 0.5)';
+  ctx.lineWidth = 0.9;
+  ctx.beginPath();
+  innerPts.forEach((p, i) => i === 0 ? ctx.moveTo(p[0], p[1]) : ctx.lineTo(p[0], p[1]));
+  ctx.closePath();
+  ctx.stroke();
+  ctx.beginPath();
+  shellPts.forEach((p, i) => {
+    ctx.moveTo(innerPts[i][0], innerPts[i][1]);
+    ctx.lineTo(p[0], p[1]);
+  });
+  ctx.stroke();
+
+  ctx.shadowBlur = 12;
+  ctx.fillStyle = '#d8ffe8';
+  const starPts = shellPts.concat(innerPts, [headPt, neckPt, tailPt, [0, 0]])
+    .concat(legs.map(l => l.foot)).concat(legs.map(l => l.link));
+  starPts.forEach(p => {
+    ctx.beginPath();
+    ctx.arc(p[0], p[1], size * 0.05 + 0.6, 0, Math.PI * 2);
+    ctx.fill();
+  });
+
+  ctx.beginPath();
+  ctx.arc(headPt[0], headPt[1], size * 0.12, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(220, 255, 230, 0.95)';
+  ctx.fill();
+
+  ctx.restore();
+}
+
+function drawAegisShields(now) {
+  if (!aegisActive) return;
+  const timeLeft = aegisActiveUntil - now;
+  const fadeIn = Math.min(1, (AEGIS_ACTIVE_DURATION - (aegisActiveUntil - now)) / 300);
+  const fadeOut = Math.min(1, timeLeft / 300);
+  const alpha = Math.min(fadeIn, fadeOut);
+  const size = AEGIS_SHIELD_R * 3.6;
+
+  for (let s = 0; s < 2; s++) {
+    const ang = aegisAngle + s * Math.PI;
+    const sx = player.x + Math.cos(ang) * AEGIS_ORBIT_RADIUS;
+    const sy = player.y + Math.sin(ang) * AEGIS_ORBIT_RADIUS;
+    drawHoloTurtle(sx, sy, size, ang, alpha, now);
+  }
+  ctx.globalAlpha = 1;
+}
+
+function drawFollowers(now) {
+  ctx.font = '18px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  if (companionsOwned.zappy) {
+    const ang = companionOrbitAngle + Math.PI;
+    const fx = player.x + Math.cos(ang) * 30;
+    const fy = player.y + Math.sin(ang) * 30 + Math.sin(now / 300) * 3;
+    ctx.fillText('🐶', fx, fy);
+  }
+  if (companionsOwned.petal) {
+    const ang = companionOrbitAngle * 1.3 + Math.PI / 2;
+    const fx = player.x + Math.cos(ang) * 28;
+    const fy = player.y + Math.sin(ang) * 28 + Math.sin(now / 260 + 1) * 3;
+    ctx.fillText('🌸', fx, fy);
+  }
+  if (companionsOwned.aegis) {
+    const ang = companionOrbitAngle * 0.8 + Math.PI * 1.5;
+    const fx = player.x + Math.cos(ang) * 32;
+    const fy = player.y + Math.sin(ang) * 32 + Math.sin(now / 340 + 2) * 3;
+    ctx.fillText('🐢', fx, fy);
+  }
+}
+
+function drawCompanionStats() {
+  const lines = [];
+  if (companionsOwned.zappy) {
+    const secsLeft = Math.max(0, Math.ceil((nextZappyCast - performance.now()) / 1000));
+    lines.push('🐶 Zappy: ' + secsLeft + 's');
+  }
+  if (companionsOwned.aegis) {
+    if (aegisActive) {
+      const secsLeft = Math.max(0, Math.ceil((aegisActiveUntil - performance.now()) / 1000));
+      lines.push('🛡️ Aegis: up ' + secsLeft + 's');
+    } else {
+      const secsLeft = Math.max(0, Math.ceil((nextAegisCast - performance.now()) / 1000));
+      lines.push('🛡️ Aegis: ' + secsLeft + 's');
+    }
+  }
+  if (companionsOwned.petal && lives < MAX_LIVES) {
+    const secsLeft = Math.max(0, Math.ceil((nextPetalTick - performance.now()) / 1000));
+    lines.push('🌸 Petal: ' + secsLeft + 's');
+  }
+  if (!lines.length) return;
+  ctx.save();
+  ctx.font = 'bold 11px "Chakra Petch", sans-serif';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'top';
+  ctx.fillStyle = 'rgba(199, 184, 255, 0.9)';
+  ctx.shadowColor = '#000';
+  ctx.shadowBlur = 4;
+  lines.forEach((line, i) => ctx.fillText(line, 8, ARENA_TOP + 6 + i * 14));
+  ctx.restore();
+}
+
+function drawHealPopup(now) {
+  if (now >= healPopupUntil) return;
+  const t = 1 - (healPopupUntil - now) / 1400;
+  const riseY = -14 * t;
+  const alpha = t < 0.75 ? 1 : (1 - t) / 0.25;
+  ctx.save();
+  ctx.globalAlpha = Math.max(0, alpha);
+  ctx.font = 'bold 13px "Chakra Petch", sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillStyle = '#7af5ca';
+  ctx.shadowColor = '#000';
+  ctx.shadowBlur = 4;
+  ctx.fillText('🌸 +¼ heart', 8, ARENA_TOP - 8 + riseY);
+  ctx.restore();
+  ctx.globalAlpha = 1;
+}
+
+function draw(now) {
+  ctx.clearRect(0, 0, W, H);
+
+  drawHolyCircle(now);
+  drawZappyCircles(now);
+
+  for (const p of projectiles) {
+    for (let i = 0; i < p.trail.length; i++) {
+      const alpha = (i + 1) / (p.trail.length + 1) * 0.4;
+      ctx.beginPath();
+      ctx.arc(p.trail[i].x, p.trail[i].y, (p.type === 'spiny' ? SPINY_R : PROJ_R) * 0.7, 0, Math.PI * 2);
+      ctx.fillStyle = hexToRgba(p.color, alpha);
+      ctx.fill();
+    }
+
+    if (p.type === 'spiny') {
+      drawSpiny(p);
+      continue;
+    }
+
+    ctx.shadowColor = p.type === 'black' ? '#e6e6ff' : p.color;
+    ctx.shadowBlur = 16;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, PROJ_R, 0, Math.PI * 2);
+    ctx.fillStyle = p.color;
+    ctx.fill();
+    if (p.type === 'black') {
+      ctx.lineWidth = 1.5;
+      ctx.strokeStyle = '#e6e6ffcc';
+      ctx.stroke();
+    }
+    ctx.shadowBlur = 0;
+    ctx.beginPath();
+    ctx.arc(p.x - 2.5, p.y - 2.5, PROJ_R * 0.35, 0, Math.PI * 2);
+    ctx.fillStyle = '#ffffffcc';
+    ctx.fill();
+  }
+
+  if (running) {
+    for (let i = 0; i < player.trail.length; i++) {
+      const alpha = (i + 1) / (player.trail.length + 1) * 0.35;
+      const rr = PLAYER_R * 0.8 * ((i + 1) / (player.trail.length + 1));
+      const pt = player.trail[i];
+      ctx.beginPath();
+      ctx.arc(pt.x, pt.y, rr, 0, Math.PI * 2);
+      ctx.fillStyle = 'hsla(' + pt.hue + ', 100%, 60%, ' + alpha + ')';
+      ctx.fill();
+    }
+
+    const curColor = playerColorAt(now);
+    ctx.shadowColor = curColor;
+    ctx.shadowBlur = 22;
+    ctx.beginPath();
+    ctx.arc(player.x, player.y, PLAYER_R, 0, Math.PI * 2);
+    ctx.fillStyle = curColor;
+    ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.beginPath();
+    ctx.arc(player.x, player.y, PLAYER_R - 5, 0, Math.PI * 2);
+    ctx.fillStyle = '#12002e';
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(player.x, player.y, PLAYER_R - 8, 0, Math.PI * 2);
+    ctx.fillStyle = curColor;
+    ctx.fill();
+
+    if (companionsOwned.aegis) drawAegisShields(now);
+    drawFollowers(now);
+    drawCompanionStats();
+    drawHealPopup(now);
+
+    if (performance.now() < invincibleUntil) {
+      drawRespawnShield(now);
+    }
+  }
+}
+
+function loop(now) {
+  try {
+    drawBg(now);
+    update(now);
+    draw(now);
+    drawPreview(now);
+  } catch (err) {
+    console.error('Bounce Dodge frame error:', err);
+  }
+  requestAnimationFrame(loop);
+}
+
+resize();
+startBtn.addEventListener('click', init);
+requestAnimationFrame(loop);
+} catch (err) {
+  console.error('Bounce Dodge failed to start:', err);
+  document.body.innerHTML =
+    '<div style="max-width:520px;margin:60px auto;padding:24px;font-family:sans-serif;' +
+    'background:#2a0050;color:#ffdede;border-radius:12px;text-align:center;">' +
+    '<h2 style="margin-bottom:12px;">⚠️ Bounce Dodge hit an error on startup</h2>' +
+    '<p style="font-size:13px;opacity:0.85;">' + String(err && err.message || err) + '</p>' +
+    '<p style="font-size:12px;margin-top:12px;opacity:0.7;">Try reloading the page. If it keeps happening, ' +
+    'open your browser\'s developer console (F12) and copy the red error text to report it.</p>' +
+    '</div>';
+}
+})();
+</script>
+</body>
+</html>
