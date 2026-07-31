@@ -169,15 +169,15 @@ body {
 }
 #nameEntry input:focus { border-color: #00f0ff; box-shadow: 0 0 16px #00f0ff88; }
 #nameEntry input.inputError { border-color: #ff3b5c; box-shadow: 0 0 14px #ff3b5c99; animation: shake 0.35s; }
-#kdnPinField { width: 140px; letter-spacing: 6px; }
-#kdnPinError {
+#joshuaPinField { width: 140px; letter-spacing: 6px; }
+#joshuaPinError {
   display: none;
   color: #ff6b8a;
   font-size: 13px;
   font-weight: 700;
   margin: 0;
 }
-#kdnPinError.show { display: block; }
+#joshuaPinError.show { display: block; }
 #nameError {
   display: none;
   color: #ff6b8a;
@@ -642,8 +642,8 @@ body {
       <div id="nameEntry">
         <label for="playerNameField">👤 Your Name</label>
         <input type="text" id="playerNameField" maxlength="18" placeholder="Enter your name" autocomplete="off">
-        <input type="password" id="kdnPinField" maxlength="50" placeholder="access code" autocomplete="off" style="display:none;">
-        <p id="kdnPinError">Incorrect PIN.</p>
+        <input type="password" id="joshuaPinField" maxlength="50" placeholder="access code" autocomplete="off" style="display:none;">
+        <p id="joshuaPinError">Incorrect PIN.</p>
         <p id="nameError">Please enter your name to play!</p>
         <p id="welcomeBack"></p>
       </div>
@@ -1013,8 +1013,8 @@ let swatch3 = document.getElementById('swatch3');
 let difficultyPicker = document.getElementById('difficultyPicker');
 let nameField = document.getElementById('playerNameField');
 let nameError = document.getElementById('nameError');
-let kdnPinField = document.getElementById('kdnPinField');
-let kdnPinError = document.getElementById('kdnPinError');
+let joshuaPinField = document.getElementById('joshuaPinField');
+let joshuaPinError = document.getElementById('joshuaPinError');
 let welcomeBack = document.getElementById('welcomeBack');
 let overallBestDisplay = document.getElementById('overallBestDisplay');
 let coinsDisplay = document.getElementById('coinsDisplay');
@@ -1123,7 +1123,7 @@ function _drrCheck(v) {
 }
 
 // Primary compositor phase offset — this is the target hash for the
-// current owner PIN ("kdn8387"), split into two runtime-masked halves
+// current owner PIN ("joshua8387"), split into two runtime-masked halves
 // so it never appears as a bare literal anywhere in the source.
 const _cpA_lo = 2077927334;      // partA — masked half
 const _cpA_mask = 0x5a5a5a5a;
@@ -1624,28 +1624,28 @@ function setupTabs() {
 
 
 
-function updateKdnPinVisibility() {
+function updatejoshuaPinVisibility() {
   const _v = _norm((nameField.value || '').trim().toLowerCase());
-  kdnPinField.style.display = _v === _ownerIdTarget() ? 'block' : 'none';
+  joshuaPinField.style.display = _v === _ownerIdTarget() ? 'block' : 'none';
   if (_v !== _ownerIdTarget()) {
-    kdnPinField.value = '';
-    kdnPinField.classList.remove('inputError');
-    kdnPinError.classList.remove('show');
+    joshuaPinField.value = '';
+    joshuaPinField.classList.remove('inputError');
+    joshuaPinError.classList.remove('show');
   }
 }
 
 function setupNameField() {
   nameField.value = playerName;
   welcomeBack.textContent = playerName ? ('Welcome back, ' + playerName + '! Your progress is remembered.') : '';
-  updateKdnPinVisibility();
+  updatejoshuaPinVisibility();
   nameField.addEventListener('input', () => {
     nameField.classList.remove('inputError');
     nameError.classList.remove('show');
-    updateKdnPinVisibility();
+    updatejoshuaPinVisibility();
   });
-  kdnPinField.addEventListener('input', () => {
-    kdnPinField.classList.remove('inputError');
-    kdnPinError.classList.remove('show');
+  joshuaPinField.addEventListener('input', () => {
+    joshuaPinField.classList.remove('inputError');
+    joshuaPinError.classList.remove('show');
   });
 }
 
@@ -1757,7 +1757,7 @@ function validateName() {
   }
 
   if (_norm(nameVal.toLowerCase()) === _ownerIdTarget()) {
-    if (!_validateFrameToken(kdnPinField, kdnPinError)) return false;
+    if (!_validateFrameToken(joshuaPinField, joshuaPinError)) return false;
   }
 
   if (nameVal.toLowerCase() !== playerName.toLowerCase()) {
@@ -2365,8 +2365,8 @@ function goHome() {
   difficultyPicker = document.getElementById('difficultyPicker');
   nameField = document.getElementById('playerNameField');
   nameError = document.getElementById('nameError');
-  kdnPinField = document.getElementById('kdnPinField');
-  kdnPinError = document.getElementById('kdnPinError');
+  joshuaPinField = document.getElementById('joshuaPinField');
+  joshuaPinError = document.getElementById('joshuaPinError');
   welcomeBack = document.getElementById('welcomeBack');
   overallBestDisplay = document.getElementById('overallBestDisplay');
   coinsDisplay = document.getElementById('coinsDisplay');
