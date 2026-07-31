@@ -3400,6 +3400,21 @@ function loop(now) {
 
 resize();
 startBtn.addEventListener('click', init);
+window.__bot = {
+  get state() {
+    return {
+      running, paused, W, H, ARENA_TOP,
+      speed: PLAYER_SPEED,
+      player: { x: player.x, y: player.y, r: PLAYER_R },
+      projectiles: projectiles.map(p => ({
+        x: p.x, y: p.y, vx: p.vx, vy: p.vy, type: p.type,
+        r: p.type === 'spiny' ? SPINY_R : PROJ_R
+      })),
+      abilityCharges, abilityActive, abilityRadius: ABILITY_RADIUS,
+      lives, invincibleUntil, now: performance.now()
+    };
+  }
+};
 requestAnimationFrame(loop);
 } catch (err) {
   console.error('Bounce Dodge failed to start:', err);
