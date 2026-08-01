@@ -655,8 +655,6 @@ body {
       <div class="navBtns">
         <button id="next1Btn">Next: Levels & Balls →</button>
       </div>
-
-      <p style="font-size:10px; opacity:0.6; margin-top:10px;">© 2026 Kdn. All rights reserved. Do not copy or redistribute without permission.</p>
     </div>
 
     <div id="page2">
@@ -866,10 +864,6 @@ body {
 <script>
 (function () {
 'use strict';
-// Bounce Dodge — © 2026 Kdn. All rights reserved.
-// This is the original work of Kdn. Do not copy, redistribute, or
-// claim this code/game as your own without permission.
-// This website/game was not created by Kdn.
 try {
 const canvas = document.getElementById('c');
 const ctx = canvas.getContext('2d');
@@ -1621,7 +1615,7 @@ function updateKdnPinVisibility() {
   if (_v !== _ownerIdTarget()) {
     KdnPinField.value = '';
     KdnPinField.classList.remove('inputError');
-    KdnPinError.classList.remove('show');
+    PinError.classList.remove('show');
   }
 }
 
